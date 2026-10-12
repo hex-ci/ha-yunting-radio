@@ -69,7 +69,8 @@
       }
     },
     "clear_recent": {
-      "name": "清空最近播放"
+      "name": "清空最近播放",
+      "description": "清空「最近播放」列表。"
     }
   },
   "entity": {

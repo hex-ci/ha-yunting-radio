@@ -69,7 +69,8 @@
       }
     },
     "clear_recent": {
-      "name": "Clear recently played"
+      "name": "Clear recently played",
+      "description": "Clear the recently played list."
     }
   },
   "entity": {

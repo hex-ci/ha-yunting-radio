@@ -1,13 +1,13 @@
 {
   "domain": "yunting",
   "name": "云听电台",
-  "version": "0.1.0",
+  "codeowners": ["@hex-ci"],
   "config_flow": true,
   "dependencies": ["http", "media_source", "persistent_notification", "ssdp"],
-  "documentation": "https://github.com/hex-ci/yunting-radio",
-  "issue_tracker": "https://github.com/hex-ci/yunting-radio/issues",
-  "codeowners": ["@hex-ci"],
+  "documentation": "https://github.com/hex-ci/ha-yunting-radio",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "loggers": ["async_upnp_client"]
+  "issue_tracker": "https://github.com/hex-ci/ha-yunting-radio/issues",
+  "loggers": ["async_upnp_client"],
+  "version": "0.1.0"
 }
