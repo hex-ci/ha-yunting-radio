@@ -1,0 +1,90 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Choose a speaker",
+        "description": "Pick a DLNA renderer on your network, or enter its device description URL.",
+        "data": {
+          "url": "Device URL"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the device, check the address and network"
+    },
+    "abort": {
+      "already_configured": "This device is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Playback options",
+        "data": {
+          "stream_prefix": "Prefix live stream URLs with ffmpeg:// (required by GEAK speakers)",
+          "quality": "Quality",
+          "line": "Stream line"
+        },
+        "data_description": {
+          "stream_prefix": "When disabled the plain http URL is sent; GEAK speakers accept it but stay silent.",
+          "quality": "Prefer high bitrate or low bitrate streams.",
+          "line": "auto picks high quality first; m3u8/mp3 pins a specific line."
+        }
+      }
+    }
+  },
+  "services": {
+    "push_station": {
+      "name": "Push station",
+      "description": "Push a radio.cn station to the speaker by name (fuzzy) or contentId.",
+      "fields": {
+        "station": {
+          "name": "Station",
+          "description": "Station name (fuzzy match) or contentId."
+        },
+        "entity_id": {
+          "name": "Target players",
+          "description": "Defaults to every player added by this integration."
+        }
+      }
+    },
+    "add_favorite": {
+      "name": "Add favorite",
+      "description": "Add a station to favorites; leave the station empty to favorite whatever is playing.",
+      "fields": {
+        "station": {
+          "name": "Station",
+          "description": "Station name or contentId; empty means the currently playing station."
+        }
+      }
+    },
+    "remove_favorite": {
+      "name": "Remove favorite",
+      "description": "Remove a station from favorites; leave the station empty for the currently playing one.",
+      "fields": {
+        "station": {
+          "name": "Station",
+          "description": "Station name or contentId; empty means the currently playing station."
+        }
+      }
+    },
+    "clear_recent": {
+      "name": "Clear recently played"
+    }
+  },
+  "entity": {
+    "button": {
+      "favorite_current": {
+        "name": "Favorite current station"
+      },
+      "unfavorite_current": {
+        "name": "Unfavorite current station"
+      }
+    },
+    "sensor": {
+      "battery": {
+        "name": "Battery"
+      }
+    }
+  }
+}

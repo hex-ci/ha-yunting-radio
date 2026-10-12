@@ -1,0 +1,41 @@
+push_station:
+  name: 推送电台
+  description: 按台名（模糊匹配）或 contentId 推送一个云听电台到音响播放。
+  fields:
+    station:
+      name: 电台
+      description: 台名（支持模糊匹配，如「中国之声」「交通」）或 contentId。
+      required: true
+      example: 中国之声
+      selector:
+        text:
+    entity_id:
+      name: 目标播放器
+      description: 不填则推给所有本集成添加的播放器。
+      selector:
+        entity:
+          domain: media_player
+          integration: yunting
+
+add_favorite:
+  name: 收藏电台
+  fields:
+    station:
+      name: 电台
+      required: true
+      example: 中国之声
+      selector:
+        text:
+
+remove_favorite:
+  name: 取消收藏
+  fields:
+    station:
+      name: 电台
+      description: 台名或 contentId。
+      required: true
+      selector:
+        text:
+
+clear_recent:
+  name: 清空最近播放

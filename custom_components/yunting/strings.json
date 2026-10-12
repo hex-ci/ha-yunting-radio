@@ -1,0 +1,90 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "选择音响",
+        "description": "选一台局域网里的 DLNA 渲染器；列表为空时直接填设备描述地址。",
+        "data": {
+          "url": "设备地址"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "连不上这台设备，检查地址与网络"
+    },
+    "abort": {
+      "already_configured": "这台设备已经添加过了"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "播放选项",
+        "data": {
+          "stream_prefix": "给直播流地址加 ffmpeg 前缀（果壳智能音响需要）",
+          "quality": "音质",
+          "line": "线路"
+        },
+        "data_description": {
+          "stream_prefix": "关掉后推的是裸 http 地址；果壳音响不认裸地址，会接受但不发声。",
+          "quality": "高清优先或低码率优先。",
+          "line": "auto 按高清优先挑，也可固定走 m3u8 或 mp3 线路。"
+        }
+      }
+    }
+  },
+  "services": {
+    "push_station": {
+      "name": "推送电台",
+      "description": "按台名（模糊匹配）或 contentId 推送一个云听电台到音响播放。",
+      "fields": {
+        "station": {
+          "name": "电台",
+          "description": "台名（支持模糊匹配）或 contentId。"
+        },
+        "entity_id": {
+          "name": "目标播放器",
+          "description": "不填则推给所有本集成添加的播放器。"
+        }
+      }
+    },
+    "add_favorite": {
+      "name": "收藏电台",
+      "description": "收藏一个电台；不填电台就收藏当前正在播放的那台。",
+      "fields": {
+        "station": {
+          "name": "电台",
+          "description": "台名或 contentId；留空则收藏当前正在播放的电台。"
+        }
+      }
+    },
+    "remove_favorite": {
+      "name": "取消收藏",
+      "description": "取消收藏一个电台；不填电台就作用于当前正在播放的那台。",
+      "fields": {
+        "station": {
+          "name": "电台",
+          "description": "台名或 contentId；留空则作用于当前正在播放的电台。"
+        }
+      }
+    },
+    "clear_recent": {
+      "name": "清空最近播放"
+    }
+  },
+  "entity": {
+    "button": {
+      "favorite_current": {
+        "name": "收藏当前电台"
+      },
+      "unfavorite_current": {
+        "name": "取消收藏当前电台"
+      }
+    },
+    "sensor": {
+      "battery": {
+        "name": "电量"
+      }
+    }
+  }
+}
