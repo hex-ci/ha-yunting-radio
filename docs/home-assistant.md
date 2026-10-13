@@ -1,6 +1,6 @@
 # 接进 Home Assistant
 
-本仓库的 `custom_components/yunting` 是一个**自定义集成**。装上之后在 HA 里就能：
+本仓库的 `custom_components/internet_radio` 是一个**自定义集成**。装上之后在 HA 里就能：
 
 1. 把音响加进来（自动列出局域网里的 DLNA 渲染器，也可以手填地址）；
 2. 点这台音响的「浏览媒体」→ 直接进云听这棵树：**央广频率 / 按省份 / 我的收藏 / 最近播放**；
@@ -15,7 +15,7 @@ HA 的媒体浏览器把搜索请求发给**内容源**：当前浏览页是 `me
 ## 安装
 
 ```bash
-cp -r custom_components/yunting /path/to/homeassistant/config/custom_components/
+cp -r custom_components/internet_radio /path/to/homeassistant/config/custom_components/
 # 重启 HA（会短暂中断，约 1 分钟）
 ```
 
@@ -62,19 +62,19 @@ HACS 用户也可以把本仓库添加为自定义仓库（类别选「集成」
 | **收藏某个台** | 点电台那一行 → 展开出「⭐ 收藏这个电台」/「取消收藏这个电台」，点一下即执行，并弹一条通知反馈 |
 | 收藏当前电台 | 也可以不用展开：面板上加按钮卡片 `button.<设备>_favorite_current_station` |
 | 看/点收藏 | 媒体浏览器 → 云听电台 → 我的收藏 → 点 ▶ 即播 |
-| 收藏任意电台 | 服务 `yunting.add_favorite`（填台名），或不填台名作用于当前在播的台 |
+| 收藏任意电台 | 服务 `internet_radio.add_favorite`（填台名），或不填台名作用于当前在播的台 |
 | 最近播放 | 树里的「最近播放」，播过的台自动记录（保留 20 条） |
-| 从自动化推送 | 服务 `yunting.push_station`，参数 `station`（台名模糊匹配或 contentId） |
+| 从自动化推送 | 服务 `internet_radio.push_station`，参数 `station`（台名模糊匹配或 contentId） |
 | 看状态 | 实体给播放状态、音量、当前流地址、台名 |
 | 看电量 | 传感器 `sensor.<设备>_battery`（设备类别 battery，60 秒刷新一次），可直接放到仪表盘的电池卡片，也能拿去做低电量提醒自动化 |
-| 重启 / 关闭音响 | 按钮 `button.<设备>_reboot_speaker` / `button.<设备>_shutdown_speaker`，**按两次确认**（第一次上膛、30 秒内第二次才下发）；自动化里用服务 `yunting.reboot` / `yunting.shutdown` 直接执行 |
-| 设备换了 IP/端口 | 按一下按钮 `button.<设备>_rediscover_device`（或调服务 `yunting.rediscover`）：按 UDN 搜一次并把新地址写回配置项。**平时不做后台搜索**，所以随时按一下是安全的 |
+| 重启 / 关闭音响 | 按钮 `button.<设备>_reboot_speaker` / `button.<设备>_shutdown_speaker`，**按两次确认**（第一次上膛、30 秒内第二次才下发）；自动化里用服务 `internet_radio.reboot` / `internet_radio.shutdown` 直接执行 |
+| 设备换了 IP/端口 | 按一下按钮 `button.<设备>_rediscover_device`（或调服务 `internet_radio.rediscover`）：按 UDN 搜一次并把新地址写回配置项。**平时不做后台搜索**，所以随时按一下是安全的 |
 
 > **为什么点电台那一行是展开、不是播放**：HA 的媒体浏览器只认「播放」和「展开」两个动作，没有给条目挂自定义按钮的机制；前端源码里是 `can_expand ? 展开 : 执行动作`。为了让每个台都能收藏，只能把电台做成可展开，代价就是点整行变成展开、播放要点行尾的 ▶。
 
 > ⚠️ 在侧边栏「媒体」面板里点台之前，**右下角的播放目标要选成这台音响**（默认是「网页浏览器」，浏览器放不了 `ffmpeg://` 地址，会一直转圈）。从音响卡片的「浏览媒体」进去则不需要选。
 
-服务清单见 `custom_components/yunting/services.yaml`，也可以在「开发者工具 → 服务」里看。
+服务清单见 `custom_components/internet_radio/services.yaml`，也可以在「开发者工具 → 服务」里看。
 
 ## 选项
 
@@ -99,7 +99,7 @@ HACS 用户也可以把本仓库添加为自定义仓库（类别选「集成」
 | 现象 | 原因与处理 |
 |---|---|
 | 添加集成时列表里没有音响 | 设备不主动广播，列表是集成自己搜的实时结果；再没有就手填 `http://<音响地址>:<端口>/renderer.xml` |
-| 设备换了 IP 或端口 | 按一下 `button.<设备>_rediscover_device`（或调服务 `yunting.rediscover`）：按 UDN 搜一次并把新地址写回配置项；发起播放时连不上也会自动搜一次 |
+| 设备换了 IP 或端口 | 按一下 `button.<设备>_rediscover_device`（或调服务 `internet_radio.rediscover`）：按 UDN 搜一次并把新地址写回配置项；发起播放时连不上也会自动搜一次 |
 | 状态是 playing 但没声音 | 选项里的 `ffmpeg://` 前缀被关了，或地址里的时效令牌过期 |
-| 实体长时间不可用 | 设备断电/换网段了。集成**不做后台搜索**：轮询只连配置项里存的地址，连不上就标不可用。设备换了地址时按一下 `button.<设备>_rediscover_device`（或调服务 `yunting.rediscover`）重新搜索并写回；发起播放时连不上也会自动搜一次 |
+| 实体长时间不可用 | 设备断电/换网段了。集成**不做后台搜索**：轮询只连配置项里存的地址，连不上就标不可用。设备换了地址时按一下 `button.<设备>_rediscover_device`（或调服务 `internet_radio.rediscover`）重新搜索并写回；发起播放时连不上也会自动搜一次 |
 | 搜索没结果 | 搜索走本地索引，首次要拉一遍（约 2 秒）；网关限流或断网时会为空，稍后重试 |

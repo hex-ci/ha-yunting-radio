@@ -85,7 +85,7 @@ class YuntingRuntime:
         self.requester = AiohttpSessionRequester(session, with_sleep=True)
         # 设备的服务描述里有非标准命名空间的 SCPD，必须容忍，否则根本连不上
         self.factory = UpnpFactory(self.requester, non_strict=True)
-        self.client = YuntingClient(cache_dir=hass.config.path('.yunting-cache'))
+        self.client = YuntingClient(cache_dir=hass.config.path('.internet_radio-cache'))
         self.favorites: list[dict[str, Any]] = []
         self.recent: list[dict[str, Any]] = []
         # 刚从媒体浏览器解析出来的电台，用来在实体上显示台名（设备不回报元数据）
@@ -145,7 +145,7 @@ class YuntingRuntime:
         """按 UDN 重新发现设备地址，默认带冷却。
 
         后台轮询**不再调用**这里（设备常年关机，SSDP 搜索每次 6–8 秒纯属浪费）：
-        只有用户主动操作才搜——推送播放、点「重新发现设备」按钮、调 `yunting.rediscover`。
+        只有用户主动操作才搜——推送播放、点「重新发现设备」按钮、调 `internet_radio.rediscover`。
         `force=True`（手动按钮/服务）时忽略冷却，用户点一次就真搜一次。
         """
         udn = entry.data.get(CONF_UDN)

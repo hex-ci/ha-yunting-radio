@@ -15,7 +15,7 @@ push_station:
       selector:
         entity:
           domain: media_player
-          integration: yunting
+          integration: internet_radio
 
 add_favorite:
   name: 收藏电台

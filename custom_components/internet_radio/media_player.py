@@ -53,7 +53,7 @@ SCAN_INTERVAL = timedelta(seconds=SCAN_INTERVAL_SECONDS)
 
 PARALLEL_UPDATES = 1
 
-# 动作条目：media-source://yunting/action/favorite/1001
+# 动作条目：media-source://internet_radio/action/favorite/1001
 ACTION_RE = re.compile(
     rf'^media-source://{DOMAIN}/{NODE_ACTION_PREFIX}'
     rf'({ACTION_FAVORITE}|{ACTION_UNFAVORITE})/(\d+)$'
@@ -135,7 +135,7 @@ class YuntingRenderer(MediaPlayerEntity):
 
         默认**只试配置项里存下来的地址**：这台设备（以及大多数 DLNA 音响）常年关机，
         后台轮询里去发 SSDP 搜索每次要 6–8 秒，纯属浪费，还会把日志刷满。只有用户
-        主动操作（推送播放、点「重新发现设备」、调用 yunting.rediscover）才传
+        主动操作（推送播放、点「重新发现设备」、调用 internet_radio.rediscover）才传
         `rediscover=True`，那次才允许按 UDN 重新搜索地址。
         """
         runtime = get_runtime(self.hass)

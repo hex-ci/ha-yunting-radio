@@ -102,7 +102,7 @@ class YuntingFavoriteButton(YuntingButton):
         runtime = get_runtime(self.hass)
         station = await async_current_station(self.hass)
         if station is None:
-            LOGGER.warning('认不出当前正在播放的电台，请用 yunting.add_favorite 指定台名')
+            LOGGER.warning('认不出当前正在播放的电台，请用 internet_radio.add_favorite 指定台名')
             return
         if self._add:
             added = await runtime.async_add_favorite(station)
@@ -126,7 +126,7 @@ class YuntingPowerButton(YuntingButton):
 
     第一次按只是「上膛」并弹通知提示再按一次，`ARM_SECONDS` 秒内第二次按才真的下发；
     超时或换个按钮都得重新按两次。自动化里要直接执行（不要确认）用服务
-    `yunting.reboot` / `yunting.shutdown`。
+    `internet_radio.reboot` / `internet_radio.shutdown`。
     """
 
     _attr_device_class = ButtonDeviceClass.RESTART

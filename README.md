@@ -22,7 +22,7 @@
 | **播放控制** | 播放 / 暂停 / 停止 / 上一台 / 下一台 / 音量 / 静音 |
 | **设备状态** | 播放状态、音量、当前流地址、当前台名 |
 | **电量** | `sensor.<设备>_battery`，标准 battery 设备类别，可直接放仪表盘电池卡片 |
-| **地址自愈** | 音响的 UPnP 端口会漂（实测 49152 / 49153 / 49154 之间变）、IP 也可能变；集成连不上时自己发 SSDP 按 UDN 重发现，并把新地址回写配置项 |
+| **地址自愈** | 音响的 UPnP 端口会漂（实测 49152 / 49153 / 49154 之间变）、IP 也可能变；集成平时只用配置项里存的地址，连不上时按一下「重新发现设备」按钮（或发起播放）才发 SSDP 按 UDN 重发现，并把新地址回写配置项 |
 
 ## 安装
 
@@ -37,9 +37,22 @@
 ```bash
 cd /path/to/homeassistant/config
 git clone https://github.com/hex-ci/home-assistant-radio.git /tmp/home-assistant-radio
-cp -r /tmp/home-assistant-radio/custom_components/yunting custom_components/
+cp -r /tmp/home-assistant-radio/custom_components/internet_radio custom_components/
 # 重启 Home Assistant
 ```
+
+## 升级说明（0.2.0：集成域名改名）
+
+0.2.0 起集成域名从 `yunting` 改成 **`internet_radio`**（为以后接云听之外的电台源留位置，仓库名 `home-assistant-radio` 也对应这个定位）。**装过 0.1.0 的必须重装一次**：
+
+1. 备份好你 HA 的 `.storage`（或至少 `core.config_entries`、`core.entity_registry`、`core.device_registry`）；
+2. 设置 → 设备与服务 → 云听电台 → 删除（会连带清掉它的实体和设备）；
+3. 把 `custom_components/yunting` 换成 `custom_components/internet_radio`（HACS 装的话重新下载即可），重启 HA；
+4. 重新**添加集成**（设备还在的话会自动发现，也可以手填地址）。
+
+服务名也跟着从 `yunting.*` 变成 **`internet_radio.*`**（`push_station` / `add_favorite` / `remove_favorite` / `clear_recent` / `reboot` / `shutdown` / `rediscover`），自动化、脚本、卡片里用到的地方要一起改。
+
+> 小技巧：不想重装也行——停 HA，把 `.storage` 里三个文件（`core.config_entries`、`core.entity_registry`、`core.device_registry`）里的 `"yunting"` 全文替换成 `"internet_radio"`，把 `.storage/yunting.data` 改名成 `internet_radio.data`，换掉组件目录再启动，实体 id 和收藏都不会变。（本项目的维护者就是这么给自己那台迁移的。）
 
 ## 配置
 
@@ -61,7 +74,7 @@ cp -r /tmp/home-assistant-radio/custom_components/yunting custom_components/
 | 收藏某个台 | 点电台那一行 → 展开 → **⭐ 收藏这个电台**（会弹通知确认） |
 | 收藏当前在播的台 | 面板加按钮卡片 `button.<设备>_favorite_current_station` |
 | 播放收藏的台 | 媒体浏览器 → 云听电台 → **我的收藏** → 点 ▶ |
-| 自动化里推送 | 服务 `yunting.push_station`，`station: 中国之声`（台名模糊匹配或 contentId） |
+| 自动化里推送 | 服务 `internet_radio.push_station`，`station: 中国之声`（台名模糊匹配或 contentId） |
 
 > **为什么点电台那一行是展开、而不是直接播放**：Home Assistant 的媒体浏览器只支持「播放」和「展开」两个动作，没有给条目挂自定义按钮的机制（前端逻辑是 `can_expand ? 展开 : 执行动作`）。为了让每个台都能收藏，只能把电台做成可展开，代价就是播放要点行尾的 ▶。
 
@@ -89,11 +102,11 @@ cp -r /tmp/home-assistant-radio/custom_components/yunting custom_components/
 
 | 服务 | 说明 |
 |---|---|
-| `yunting.push_station` | 按台名或 contentId 推送；不指定实体就推给全部 |
-| `yunting.add_favorite` / `yunting.remove_favorite` | 收藏 / 取消收藏；**不填台名就作用于当前在播的台** |
-| `yunting.reboot` / `yunting.shutdown` | 直接下发重启 / 关机（**不经按钮的二次确认**，给自动化用） |
-| `yunting.rediscover` | 按 UDN 重新搜索所有设备的地址并回写配置项，返回每台设备搜到的地址 |
-| `yunting.clear_recent` | 清空「最近播放」 |
+| `internet_radio.push_station` | 按台名或 contentId 推送；不指定实体就推给全部 |
+| `internet_radio.add_favorite` / `internet_radio.remove_favorite` | 收藏 / 取消收藏；**不填台名就作用于当前在播的台** |
+| `internet_radio.reboot` / `internet_radio.shutdown` | 直接下发重启 / 关机（**不经按钮的二次确认**，给自动化用） |
+| `internet_radio.rediscover` | 按 UDN 重新搜索所有设备的地址并回写配置项，返回每台设备搜到的地址 |
+| `internet_radio.clear_recent` | 清空「最近播放」 |
 
 **选项**（设置 → 设备与服务 → 云听电台 → 配置）
 
@@ -132,7 +145,7 @@ cp -r /tmp/home-assistant-radio/custom_components/yunting custom_components/
 ## 目录
 
 ```
-custom_components/yunting/    集成本体（自包含，含云听客户端）
+custom_components/internet_radio/    集成本体（自包含，含云听客户端）
   client.py                   云听接口客户端（纯标准库）
   media_player.py             媒体播放器实体（通用 DMR 客户端；播放时按设备选项加 ffmpeg:// 前缀）
   media_source.py             媒体源：浏览树 + 搜索 + 解析播放地址
@@ -157,9 +170,9 @@ Browse, search and favorite Chinese radio stations from 云听 inside the Home A
 - Search box in the media browser (searching a media source goes straight to the source, so no player cooperation is needed — the bundled player exists for the device side: the `ffmpeg://` prefix and the device's private actions).
 - Stations are playable items; each one expands into favorite / unfavorite actions.
 - Entities: media player, battery sensor, favorite buttons, a re-discover button. Services: `push_station`, `add_favorite`, `remove_favorite`, `clear_recent`, `reboot`, `shutdown`, `rediscover`.
-- Self-healing device address (UPnP ports drift): the address is searched **on demand only** — press the re-discover button, call `yunting.rediscover`, or simply hit play (a failed connect triggers one search) — and the new address is written back to the config entry. No background SSDP polling.
+- Self-healing device address (UPnP ports drift): the address is searched **on demand only** — press the re-discover button, call `internet_radio.rediscover`, or simply hit play (a failed connect triggers one search) — and the new address is written back to the config entry. No background SSDP polling.
 
-Install via HACS as a custom repository (category: integration) or copy `custom_components/yunting` into your config directory and restart. When adding the integration you can either add a DLNA speaker (full control: playback, state, battery, power buttons) or choose **media source only** — that registers the Yunting Radio source in your media library without creating any device, which is what you want if you already have a player (`dlna_dmr`, Music Assistant, …) and just need the stations.
+Install via HACS as a custom repository (category: integration) or copy `custom_components/internet_radio` into your config directory and restart. When adding the integration you can either add a DLNA speaker (full control: playback, state, battery, power buttons) or choose **media source only** — that registers the Yunting Radio source in your media library without creating any device, which is what you want if you already have a player (`dlna_dmr`, Music Assistant, …) and just need the stations.
 
 ## License
 

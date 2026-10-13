@@ -27,7 +27,7 @@ sign = md5( 按 key 升序拼接的参数 + '&timestamp=' + ts + '&key=' + 分�
 1. **参数值参与签名时不做 URL 编码**，URL 上的查询串要编码。纯数字参数看不出区别，中文参数会露馅：签名用 `searchWord=交通`，URL 用 `searchWord=%E4%BA%A4%E9%80%9A`。签名用了编码后的值会返回「参数验签错误」。
 2. **带参数时网关先验签再路由**，所以「参数验签错误」不代表路径不存在；只有签名通过后的 404 才是路径不存在。
 
-密钥按接口路径分组（与云听 App 的密钥表一致，见 `yunting/client.py` 的 `GROUP_KEYS`）。分组按路径特征判定：`/format/`、`/contentBiz/`、`/search/`、`/series/`、`/publish/`、`/live/`，其余归 `news`。
+密钥按接口路径分组（与云听 App 的密钥表一致，见 `internet_radio/client.py` 的 `GROUP_KEYS`）。分组按路径特征判定：`/format/`、`/contentBiz/`、`/search/`、`/series/`、`/publish/`、`/live/`，其余归 `news`。
 
 限流：短时间内大批量请求（几百次）会开始返回 **HTTP 418**，之后一段时间所有请求都 418。批量拉取要控速、设并发上限（本工具默认 6 并发 + 磁盘缓存 + 418 退避重试）。
 
