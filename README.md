@@ -2,14 +2,21 @@
 
 **在 Home Assistant 的媒体浏览器里搜索、浏览、收藏云听的全国电台，一键推送到局域网音响播放。**
 
-一个 Home Assistant 自定义集成（custom integration），把电台变成 HA 媒体库里可浏览、可搜索的内容源，并通过 DLNA/UPnP 把直播流推到音响上播放——顺带给出播放状态、音量、当前台名和设备电量。
+一个 Home Assistant 自定义集成（custom integration），把电台变成 HA 媒体库里可浏览、可搜索的内容源，并通过 DLNA/UPnP 把直播流推到音响上播放——顺带给出播放状态、音量、当前台名、设备电量。
+
+**两类音响都能用：**
+
+| 你的设备 | 能用到的功能 |
+|---|---|
+| **任意标准 DLNA/UPnP 音响**（智能音箱、电视、功放、网络播放器、路由器插件…） | 搜索电台、逐层浏览、收藏、最近播放、一键推送播放、播放控制与状态、音量；也可以**只启用内容源、不添加设备**，让你已有的播放器（官方 `dlna_dmr`、Music Assistant…）直接播 |
+| **果壳智能音响（GEAK，型号 GM6）** | 以上全部，另加**电量传感器**和**重启 / 关闭音响**按钮；直播流地址前缀自动适配（这台设备要求带 `ffmpeg://`）。设备虽已停产，功能完整可用 |
 
 > 不需要在 HA 里维护任何外部脚本或服务：装上集成即可用。
 
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5?logo=homeassistant&logoColor=white)
 ![License](https://img.shields.io/github/license/hex-ci/home-assistant-radio)
 
-关键词：Home Assistant 集成 · 云听 · 中央广播电视总台 · 网络收音机 · 电台 · 媒体源 media_source · 媒体播放器 media_player · DLNA · UPnP · 果壳智能音响 · GEAK · 智能家居
+关键词：Home Assistant 集成 · 云听 · 中央广播电视总台 · 网络收音机 · 电台 · 媒体源 media_source · 媒体播放器 media_player · DLNA · UPnP · 智能音箱 · 音响 · 果壳智能音响 · GEAK · 智能家居
 
 ## 功能
 
@@ -21,7 +28,8 @@
 | **最近播放** | 播过的台自动记录（保留 20 条），不收藏也能找回 |
 | **播放控制** | 播放 / 暂停 / 停止 / 上一台 / 下一台 / 音量 / 静音 |
 | **设备状态** | 播放状态、音量、当前流地址、当前台名 |
-| **电量** | `sensor.<设备>_battery`，标准 battery 设备类别，可直接放仪表盘电池卡片 |
+| **电量** | `sensor.<设备>_battery`，标准 battery 设备类别，可直接放仪表盘电池卡片（设备需支持私有动作 `GetPowerStatus`，如**果壳智能音响**；其他设备不创建这个实体） |
+| **重启 / 关闭音响** | 按钮点两次确认后才下发（防误触）；自动化里可直接用服务 `internet_radio.reboot` / `internet_radio.shutdown`。（设备需支持私有动作 `TimingShutdown`，如**果壳智能音响**） |
 | **地址自愈** | 音响的 UPnP 端口会漂（实测 49152 / 49153 / 49154 之间变）、IP 也可能变；集成平时只用配置项里存的地址，连不上时按一下「重新发现设备」按钮（或发起播放）才发 SSDP 按 UDN 重发现，并把新地址回写配置项 |
 
 ## 安装
@@ -105,28 +113,41 @@ cp -r /tmp/home-assistant-radio/custom_components/internet_radio custom_componen
 
 ## 支持的设备
 
-在 **果壳智能音响（GEAK，型号 GM6）** 上实测可用。**其他标准 UPnP/DLNA MediaRenderer 也能用**（添加设备时选你自己的设备即可），差异只在：
+### 标准 DLNA/UPnP 音响（通用）
 
-- `ffmpeg://` 前缀是果壳音响的要求，添加其他设备时集成会**自动关掉**它；设备能播 m3u8 就直接放高清线路，播不了就在选项里把线路固定成 `mp3`；
-- 电量传感器用的是果壳音响的私有动作 `GetPowerStatus`，设备不支持时不创建这个实体；
-- 重启/关闭音响用的是私有动作 `TimingShutdown`，设备不支持时不创建这两个按钮。
-- **搜索不挑播放器**：搜索由内容源自己负责（HA 的媒体浏览器在浏览 `media-source://` 节点时把搜索请求直接发给媒体源），所以任何播放器、甚至「网页浏览器」当播放目标时都能搜；播放器的 `SEARCH_MEDIA` 只有「浏览播放器自有树」时才用得上。
+任何在局域网里以 `MediaRenderer` 应答的 UPnP/DLNA 设备都能加进来：智能音箱、电视、功放、网络播放器、路由器上的 DLNA 插件等等。
+
+- 能用到：搜索、按央广/省份浏览、收藏、最近播放、推送播放、播放控制、状态与音量。
+- 添加集成时**自动关掉** `ffmpeg://` 前缀（那只是果壳音响的要求）；设备放不了 m3u8 就在选项里把线路固定成 `mp3`。
+- 它的私有动作（电量、重启/关机）都没有，所以那些实体不会创建。
+- 已经有自己的播放器（官方 `dlna_dmr`、Music Assistant…）？可以**只启用内容源、不添加设备**，在媒体面板右下角把播放目标选成你的播放器即可。
+- 搜索框不挑播放器：搜索由内容源自己负责（HA 的媒体浏览器浏览 `media-source://…` 节点时把搜索请求直接发给媒体源），所以任何播放目标（甚至「网页浏览器」）都能搜。
+
+### 果壳智能音响（GEAK，型号 GM6）
+
+在这台设备上做过真机实测（DIDL 宽容度、URI 前缀、私有动作、SSDP 应答率都有结论，见 [`docs/protocol-notes.md`](docs/protocol-notes.md)）。设备已停产，但功能完整：
+
+- 上面**全部**功能都能用；
+- 额外获得**电量传感器**（私有动作 `GetPowerStatus`）和**重启 / 关闭音响**按钮（私有动作 `TimingShutdown`，取值与官方 App 控制端一致：`0` 关机、`999` 重启）；
+- 添加设备时**自动打开** `ffmpeg://` 前缀——这台设备要求直播流地址带前缀，裸 http 会被接受但不发声；
+- 已知设备侧特性：不回报曲目元数据（台名由集成记）、不支持播放列表（多台连播请用自动化定时切台）。
 
 ## 常见问题
 
 | 现象 | 处理 |
 |---|---|
 | 添加集成时列表里没有音响 | 设备不主动广播；手填 `http://<音响地址>:<端口>/renderer.xml` |
-| 换了 IP 或端口 | 不用管，集成会自己重发现并回写地址 |
-| 状态是 playing 但没声音 | 选项里的 `ffmpeg://` 前缀被关了，或直播地址里的时效令牌过期（重新点一次即可） |
-| 点台一直转圈 | 侧边栏「媒体」面板的右下角播放目标还是「网页浏览器」，改成音响 |
+| 换了 IP 或端口 | 按一下「重新发现设备」按钮（或直接发起播放）：集成会按 UDN 搜一次并把新地址回写配置项 |
+| 状态是 playing 但没声音（果壳音响） | 选项里的 `ffmpeg://` 前缀被关了，或直播地址里的时效令牌过期（重新点一次即可） |
+| 普通 DLNA 设备推过去没声音 | 那条流（高清通常是 m3u8）设备放不了：在集成选项里把**线路**固定成 `mp3` 再试 |
+| 点台一直转圈 | 侧边栏「媒体」面板的右下角播放目标还是「网页浏览器」，改成音响（或你自己的播放器） |
 | 搜索没结果 | 搜索走本地索引（首次约 2 秒拉取）；网关限流或断网时会为空，稍后重试 |
-| 看不到当前台名 | 音响不回报曲目元数据（把 `TrackMetaData` 回成字面量 `unkown`），台名由集成在推送时记下来 |
+| 看不到当前台名（果壳音响） | 设备不回报曲目元数据（把 `TrackMetaData` 回成字面量 `unkown`），台名由集成在推送时记下来 |
 
 ## 已知限制
 
-- 音响**不回报曲目元数据**，所以台名是集成记的（HA 重启后第一条推送前为空）；直播流的播放进度也不可靠。
-- 音响**不支持播放列表**：它不认 URI 里的列表文件（实测从不请求），所以只能一台一台点；多台连播请用 HA 自动化定时切台。
+- **果壳音响**不回报曲目元数据，所以台名是集成记的（HA 重启后第一条推送前为空）；直播流的播放进度也不可靠。普通 DLNA 设备如果能回报元数据，HA 侧会照常显示。
+- **果壳音响**不支持播放列表：它不认 URI 里的列表文件（实测从不请求），所以只能一台一台点；多台连播请用 HA 自动化定时切台。
 - 集成自带云听客户端（纯标准库），所有网络调用丢执行器跑，不阻塞事件循环。
 
 ## 目录
@@ -137,7 +158,7 @@ custom_components/internet_radio/    集成本体（自包含，含云听客户�
   media_player.py             媒体播放器实体（通用 DMR 客户端；播放时按设备选项加 ffmpeg:// 前缀）
   media_source.py             媒体源：浏览树 + 搜索 + 解析播放地址
   button.py  sensor.py        收藏按钮、电量传感器
-  config_flow.py              添加设备（SSDP 发现或手填）、选项
+  config_flow.py              添加设备（SSDP 发现或手填）/ 只启用内容源、选项
   discovery.py                自己发 SSDP 搜索 + 按 UDN 重发现
 docs/                         协议实测结论、云听接口、集成细节
 ```
@@ -152,7 +173,14 @@ docs/                         协议实测结论、云听接口、集成细节
 
 **Yunting Radio — Home Assistant integration for 云听 internet radio.**
 
-Browse, search and favorite Chinese radio stations from 云听 inside the Home Assistant media browser, then push the live stream to any DLNA/UPnP renderer on your LAN. Tested on the GEAK (果壳) smart speaker.
+Browse, search and favorite Chinese radio stations from 云听 inside the Home Assistant media browser, then push the live stream to any DLNA/UPnP renderer on your LAN.
+
+**Works with two kinds of speakers:**
+
+| Your device | What you get |
+|---|---|
+| **Any standard DLNA/UPnP renderer** (smart speakers, TVs, receivers, network players, router plugins…) | Search, browse by station/province, favorites, recently played, play/volume/state; or turn on **media source only** and play it in your own player (`dlna_dmr`, Music Assistant…) |
+| **GEAK (果壳) smart speaker, model GM6** | Everything above, plus the **battery sensor** and the **reboot / shutdown buttons**, with the `ffmpeg://` stream prefix handled automatically. Discontinued, but fully supported |
 
 - Search box in the media browser (searching a media source goes straight to the source, so no player cooperation is needed — the bundled player exists for the device side: the `ffmpeg://` prefix and the device's private actions).
 - Stations are playable items; each one expands into favorite / unfavorite actions.
