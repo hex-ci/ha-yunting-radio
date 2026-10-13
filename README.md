@@ -41,19 +41,6 @@ cp -r /tmp/home-assistant-radio/custom_components/internet_radio custom_componen
 # 重启 Home Assistant
 ```
 
-## 升级说明（0.2.0：集成域名改名）
-
-0.2.0 起集成域名从 `yunting` 改成 **`internet_radio`**（为以后接云听之外的电台源留位置，仓库名 `home-assistant-radio` 也对应这个定位）。**装过 0.1.0 的必须重装一次**：
-
-1. 备份好你 HA 的 `.storage`（或至少 `core.config_entries`、`core.entity_registry`、`core.device_registry`）；
-2. 设置 → 设备与服务 → 云听电台 → 删除（会连带清掉它的实体和设备）；
-3. 把 `custom_components/yunting` 换成 `custom_components/internet_radio`（HACS 装的话重新下载即可），重启 HA；
-4. 重新**添加集成**（设备还在的话会自动发现，也可以手填地址）。
-
-服务名也跟着从 `yunting.*` 变成 **`internet_radio.*`**（`push_station` / `add_favorite` / `remove_favorite` / `clear_recent` / `reboot` / `shutdown` / `rediscover`），自动化、脚本、卡片里用到的地方要一起改。
-
-> 小技巧：不想重装也行——停 HA，把 `.storage` 里三个文件（`core.config_entries`、`core.entity_registry`、`core.device_registry`）里的 `"yunting"` 全文替换成 `"internet_radio"`，把 `.storage/yunting.data` 改名成 `internet_radio.data`，换掉组件目录再启动，实体 id 和收藏都不会变。（本项目的维护者就是这么给自己那台迁移的。）
-
 ## 配置
 
 **设置 → 设备与服务 → 添加集成 → 云听电台**，然后二选一：
