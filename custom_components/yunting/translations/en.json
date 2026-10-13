@@ -2,18 +2,31 @@
   "config": {
     "step": {
       "user": {
-        "title": "Choose a speaker",
-        "description": "Pick a DLNA renderer on your network, or enter its device description URL.",
+        "title": "Yunting Radio",
+        "description": "Add a DLNA speaker to play from and watch, or just add the Yunting Radio media source if you already have a player?",
+        "menu_options": {
+          "device": "Add a DLNA speaker",
+          "source_only": "Media source only (no device)"
+        }
+      },
+      "device": {
+        "title": "Add speaker",
+        "description": "Pick a DLNA renderer on your LAN, or type the device description URL if the list is empty.",
         "data": {
           "url": "Device URL"
         }
+      },
+      "source_only": {
+        "title": "Media source only",
+        "description": "No device: just registers the Yunting Radio media source (941 stations, browsable and searchable). Pick your own player in the bottom-right of the media panel to play."
       }
     },
     "error": {
-      "cannot_connect": "Cannot reach the device, check the address and network"
+      "cannot_connect": "Cannot connect to this device, check the URL and network"
     },
     "abort": {
-      "already_configured": "This device is already configured"
+      "already_configured": "This device is already configured",
+      "single_instance_allowed": "The media source is already enabled"
     }
   },
   "options": {

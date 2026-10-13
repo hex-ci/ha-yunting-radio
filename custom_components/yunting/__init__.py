@@ -32,6 +32,7 @@ from .const import (
     REDISCOVERY_COOLDOWN,
     CONF_LINE,
     CONF_QUALITY,
+    CONF_SOURCE_ONLY,
     CONF_STREAM_PREFIX,
     CONF_UDN,
     CONF_URL,
@@ -299,9 +300,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def _async_rediscover_all(hass: HomeAssistant) -> dict[str, Any]:
     """主动重发现所有设备的地址（按钮/服务走的就是这里），搜到的地址回写配置项。"""
     runtime = get_runtime(hass)
-    entries = hass.config_entries.async_entries(DOMAIN)
+    entries = _device_entries(hass)
     if not entries:
-        raise HomeAssistantError('还没有添加任何设备')
+        raise HomeAssistantError('还没有添加任何设备，没有地址可发现')
 
     found: dict[str, Any] = {}
     for entry in entries:
@@ -324,9 +325,9 @@ async def _async_rediscover_all(hass: HomeAssistant) -> dict[str, Any]:
 async def _async_power(hass: HomeAssistant, timeout: int, label: str) -> None:
     """给所有本集成的设备下发重启/关机（自动化用，不经按钮的二次确认）。"""
     runtime = get_runtime(hass)
-    entries = hass.config_entries.async_entries(DOMAIN)
+    entries = _device_entries(hass)
     if not entries:
-        raise HomeAssistantError('还没有添加任何设备')
+        raise HomeAssistantError('还没有添加任何设备，没有可操作的音响')
     for entry in entries:
         try:
             await runtime.async_call_action(
@@ -406,15 +407,29 @@ async def async_push_station(hass: HomeAssistant, station: dict,
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """装载配置项。"""
+    """装载配置项。
+
+    「只启用内容源」的配置项（没有设备）不装载任何实体平台：它存在的意义就是让
+    本集成处于已装载状态，从而把云听电台注册进 HA 的媒体库。
+    """
     get_runtime(hass)
+    if entry.data.get(CONF_SOURCE_ONLY):
+        LOGGER.info('云听电台内容源已启用（这台没添加设备）')
+        return True
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
 
+def _device_entries(hass: HomeAssistant) -> list[ConfigEntry]:
+    """本集成里真正带设备的配置项（有 UDN 的）；「只启用内容源」的那种不算。"""
+    return [e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_UDN)]
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """卸载配置项。"""
+    if entry.data.get(CONF_SOURCE_ONLY):
+        return True
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 

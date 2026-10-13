@@ -43,10 +43,14 @@ cp -r /tmp/ha-yunting-radio/custom_components/yunting custom_components/
 
 ## 配置
 
-**设置 → 设备与服务 → 添加集成 → 云听电台**
+**设置 → 设备与服务 → 添加集成 → 云听电台**，然后二选一：
 
-- 集成会自己发 SSDP 搜索，列出局域网里的 DLNA 渲染器（果壳音响这类设备**不主动广播**，所以不走 HA 自带的发现缓存）；
-- 列表里没有你的设备时，直接填设备描述地址：`http://<音响地址>:<端口>/renderer.xml`。
+| 选项 | 什么时候用 | 会发生什么 |
+|---|---|---|
+| **添加一台 DLNA 音响** | 想用本集成播放、看状态、看电量、重启/关机 | 集成自己发 SSDP 搜索列出局域网里的渲染器（果壳音响这类设备**不主动广播**，所以不走 HA 自带的发现缓存）；列表里没有你的设备时直接填 `http://<地址>:<端口>/renderer.xml` |
+| **只启用云听电台内容源** | 已经有别的播放器（官方 `dlna_dmr`、Music Assistant…），只想要「云听电台」这个媒体库入口 | **不添加任何设备、不建任何实体**，只把云听电台注册进媒体库；播放时在媒体面板右下角把目标选成你自己的播放器即可（搜索是内容源自己的能力，不依赖播放器） |
+
+只启用内容源时**没有任何设备是正常的**：媒体浏览器里照样能浏览 941 个电台、能搜索、能解析播放地址。
 
 ## 用法
 
@@ -155,7 +159,7 @@ Browse, search and favorite 941 Chinese radio stations from radio.cn (央广 + 3
 - Entities: media player, battery sensor, favorite buttons, a re-discover button. Services: `push_station`, `add_favorite`, `remove_favorite`, `clear_recent`, `reboot`, `shutdown`, `rediscover`.
 - Self-healing device address (UPnP ports drift): the address is searched **on demand only** — press the re-discover button, call `yunting.rediscover`, or simply hit play (a failed connect triggers one search) — and the new address is written back to the config entry. No background SSDP polling.
 
-Install via HACS as a custom repository (category: integration) or copy `custom_components/yunting` into your config directory and restart.
+Install via HACS as a custom repository (category: integration) or copy `custom_components/yunting` into your config directory and restart. When adding the integration you can either add a DLNA speaker (full control: playback, state, battery, power buttons) or choose **media source only** — that registers the Yunting Radio source in your media library without creating any device, which is what you want if you already have a player (`dlna_dmr`, Music Assistant, …) and just need the stations.
 
 ## License
 

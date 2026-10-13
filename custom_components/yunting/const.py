@@ -15,6 +15,10 @@ CONF_UDN = 'udn'
 # 设备描述里读到的厂商与型号，只用来在 HA 设备页显示（不再写死果壳）
 CONF_MANUFACTURER = 'manufacturer'
 CONF_MODEL = 'model'
+# 「只启用内容源、不加设备」的配置项标记（给已有别的播放器的用户用）
+CONF_SOURCE_ONLY = 'source_only'
+SOURCE_ONLY_UNIQUE_ID = 'yunting_source_only'
+SOURCE_ONLY_TITLE = '云听电台'
 # 选项：是否给直播流地址加前缀（果壳音响必须加）、音质与线路偏好
 CONF_STREAM_PREFIX = 'stream_prefix'
 CONF_QUALITY = 'quality'

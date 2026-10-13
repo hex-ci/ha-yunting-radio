@@ -21,6 +21,7 @@ from . import get_runtime
 from .const import (
     CONF_LINE,
     CONF_QUALITY,
+    CONF_SOURCE_ONLY,
     CONF_STREAM_PREFIX,
     CONF_UDN,
     CONF_URL,
@@ -29,7 +30,10 @@ from .const import (
     DOMAIN,
     GEAK_UDN_PREFIX,
     LINE_CHOICES,
+    LOGGER,
     QUALITY_CHOICES,
+    SOURCE_ONLY_TITLE,
+    SOURCE_ONLY_UNIQUE_ID,
 )
 from .discovery import async_discover_renderers
 
@@ -37,11 +41,27 @@ MEDIA_RENDERER_ST = 'urn:schemas-upnp-org:device:MediaRenderer:1'
 
 
 class YuntingConfigFlow(ConfigFlow, domain=DOMAIN):
-    """添加设备。"""
+    """添加设备，或者只启用云听电台内容源。"""
 
     VERSION = 1
 
     async def async_step_user(self, user_input=None) -> ConfigFlowResult:
+        """第一步：问清要干什么。
+
+        两条路：加一台 DLNA 渲染器（能播能控），或者**只启用内容源**——后者的场景是
+        用户已经有别的播放器（官方 dlna_dmr、Music Assistant…），只想在媒体库里多一个
+        「云听电台」入口，这时不需要本集成的设备实体。
+        """
+        return self.async_show_menu(step_id='user', menu_options=['device', 'source_only'])
+
+    async def async_step_source_only(self, user_input=None) -> ConfigFlowResult:
+        """只启用云听电台内容源，不添加任何设备。"""
+        await self.async_set_unique_id(SOURCE_ONLY_UNIQUE_ID)
+        self._abort_if_unique_id_configured()
+        LOGGER.info('只启用云听电台内容源（未添加设备）')
+        return self.async_create_entry(title=SOURCE_ONLY_TITLE, data={CONF_SOURCE_ONLY: True})
+
+    async def async_step_device(self, user_input=None) -> ConfigFlowResult:
         """选设备或填地址。"""
         errors: dict[str, str] = {}
         devices = await self._async_discover()
@@ -82,7 +102,7 @@ class YuntingConfigFlow(ConfigFlow, domain=DOMAIN):
         else:
             schema = vol.Schema({vol.Required(CONF_URL, default='http://'): str})
 
-        return self.async_show_form(step_id='user', data_schema=schema, errors=errors)
+        return self.async_show_form(step_id='device', data_schema=schema, errors=errors)
 
     # ------------------------------------------------------------------ 工具
     async def _async_discover(self) -> list[dict]:

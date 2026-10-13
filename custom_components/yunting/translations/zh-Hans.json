@@ -2,18 +2,31 @@
   "config": {
     "step": {
       "user": {
-        "title": "选择音响",
+        "title": "云听电台",
+        "description": "要添加一台 DLNA 音响来播放和看状态，还是已经有别的播放器、只想把「云听电台」加进媒体库？",
+        "menu_options": {
+          "device": "添加一台 DLNA 音响",
+          "source_only": "只启用云听电台内容源（不添加设备）"
+        }
+      },
+      "device": {
+        "title": "添加音响",
         "description": "选一台局域网里的 DLNA 渲染器；列表为空时直接填设备描述地址。",
         "data": {
           "url": "设备地址"
         }
+      },
+      "source_only": {
+        "title": "只启用内容源",
+        "description": "不添加任何设备：只把「云听电台」注册进媒体库（全国 941 个电台，可浏览可搜索）。播放时在媒体面板右下角选你自己的播放器即可。"
       }
     },
     "error": {
       "cannot_connect": "连不上这台设备，检查地址与网络"
     },
     "abort": {
-      "already_configured": "这台设备已经添加过了"
+      "already_configured": "这台设备已经添加过了",
+      "single_instance_allowed": "内容源已经启用过了"
     }
   },
   "options": {
