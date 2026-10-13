@@ -1,6 +1,6 @@
 # 云听电台 · Home Assistant 集成
 
-**在 Home Assistant 的媒体浏览器里搜索、浏览、收藏云听（radio.cn）的全国电台，一键推送到局域网音响播放。**
+**在 Home Assistant 的媒体浏览器里搜索、浏览、收藏云听的全国电台，一键推送到局域网音响播放。**
 
 一个 Home Assistant 自定义集成（custom integration），把「央广 + 31 个省共 941 个电台」变成 HA 媒体库里可浏览、可搜索的内容源，并通过 DLNA/UPnP 把直播流推到音响上播放——顺带给出播放状态、音量、当前台名和设备电量。
 
@@ -9,7 +9,7 @@
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5?logo=homeassistant&logoColor=white)
 ![License](https://img.shields.io/github/license/hex-ci/ha-yunting-radio)
 
-关键词：Home Assistant 集成 · 云听 · radio.cn · 中央广播电视总台 · 网络收音机 · 电台 · 媒体源 media_source · 媒体播放器 media_player · DLNA · UPnP · 果壳智能音响 · GEAK · 智能家居
+关键词：Home Assistant 集成 · 云听 · 中央广播电视总台 · 网络收音机 · 电台 · 媒体源 media_source · 媒体播放器 media_player · DLNA · UPnP · 果壳智能音响 · GEAK · 智能家居
 
 ## 功能
 
@@ -144,15 +144,15 @@ docs/                         协议实测结论、云听接口、集成细节
 
 ## 原理与协议
 
-- 云听（radio.cn）接口与签名规则：[`docs/radio-cn-api.md`](docs/radio-cn-api.md)
+- 云听接口与签名规则：[`docs/radio-cn-api.md`](docs/radio-cn-api.md)
 - DLNA 渲染器与果壳音响的实测协议事实：[`docs/protocol-notes.md`](docs/protocol-notes.md)
 - 集成实现与排错细节：[`docs/home-assistant.md`](docs/home-assistant.md)
 
 ## English
 
-**Yunting Radio — Home Assistant integration for radio.cn (云听) internet radio.**
+**Yunting Radio — Home Assistant integration for 云听 internet radio.**
 
-Browse, search and favorite 941 Chinese radio stations from radio.cn (央广 + 31 provinces) inside the Home Assistant media browser, then push the live stream to any DLNA/UPnP renderer on your LAN. Tested on the GEAK (果壳) smart speaker.
+Browse, search and favorite 941 Chinese radio stations from 云听 (央广 + 31 provinces) inside the Home Assistant media browser, then push the live stream to any DLNA/UPnP renderer on your LAN. Tested on the GEAK (果壳) smart speaker.
 
 - Search box in the media browser (searching a media source goes straight to the source, so no player cooperation is needed — the bundled player exists for the device side: the `ffmpeg://` prefix and the device's private actions).
 - Stations are playable items; each one expands into favorite / unfavorite actions.

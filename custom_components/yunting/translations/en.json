@@ -49,7 +49,7 @@
   "services": {
     "push_station": {
       "name": "Push station",
-      "description": "Push a radio.cn station to the speaker by name (fuzzy) or contentId.",
+      "description": "Push a 云听 station to the speaker by name (fuzzy) or contentId.",
       "fields": {
         "station": {
           "name": "Station",

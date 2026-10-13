@@ -37,7 +37,7 @@ async def async_get_media_source(hass: HomeAssistant) -> 'YuntingMediaSource':
 
 
 class YuntingMediaSource(MediaSource):
-    """云听电台（radio.cn）的内容源。"""
+    """云听电台的内容源。"""
 
     name = '云听电台'
 
