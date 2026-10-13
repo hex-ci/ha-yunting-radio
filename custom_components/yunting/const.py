@@ -35,12 +35,23 @@ SERVICE_PUSH_STATION = 'push_station'
 SERVICE_ADD_FAVORITE = 'add_favorite'
 SERVICE_REMOVE_FAVORITE = 'remove_favorite'
 SERVICE_CLEAR_RECENT = 'clear_recent'
+SERVICE_REBOOT = 'reboot'
+SERVICE_SHUTDOWN = 'shutdown'
 
 ATTR_STATION = 'station'
 ATTR_ENTITY_ID = 'entity_id'
 
 # 最近播放保留条数
 RECENT_LIMIT = 20
+
+# UPnP 服务类型
+AV_TRANSPORT_SERVICE = 'urn:schemas-upnp-org:service:AVTransport:1'
+RENDERING_CONTROL_SERVICE = 'urn:schemas-upnp-org:service:RenderingControl:1'
+
+# 私有动作 TimingShutdown 的 TimeOuts 取值（厂商文档口径：-1 取消、0 立即关机、999 重启）
+TIMEOUT_CANCEL = -1
+TIMEOUT_SHUTDOWN = 0
+TIMEOUT_REBOOT = 999
 
 # 媒体浏览器里的层级标识
 NODE_ROOT = ''

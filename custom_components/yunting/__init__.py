@@ -24,12 +24,16 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 
 from .client import YuntingClient, YuntingError
+from .discovery import async_find_location_by_udn
 from .const import (
     ATTR_ENTITY_ID,
     ATTR_STATION,
+    AV_TRANSPORT_SERVICE,
     CONF_LINE,
     CONF_QUALITY,
     CONF_STREAM_PREFIX,
+    CONF_UDN,
+    CONF_URL,
     DEFAULT_LINE,
     DEFAULT_QUALITY,
     DEFAULT_STREAM_PREFIX,
@@ -39,9 +43,13 @@ from .const import (
     SERVICE_ADD_FAVORITE,
     SERVICE_CLEAR_RECENT,
     SERVICE_PUSH_STATION,
+    SERVICE_REBOOT,
     SERVICE_REMOVE_FAVORITE,
+    SERVICE_SHUTDOWN,
     STORAGE_KEY,
     STORAGE_VERSION,
+    TIMEOUT_REBOOT,
+    TIMEOUT_SHUTDOWN,
 )
 
 PLATFORMS = [Platform.MEDIA_PLAYER, Platform.BUTTON, Platform.SENSOR]
@@ -87,6 +95,8 @@ class YuntingRuntime:
         self.line = DEFAULT_LINE
         self._store: Store | None = None
         self._lock = asyncio.Lock()
+        # 每个配置项一份 UPnP 设备连接（按钮/传感器用）
+        self._devices: dict[str, Any] = {}
         # 上一次应用的选项，用来判断配置项更新是不是真的改了选项（避免重载循环）
         self.applied_options: dict[str, Any] = {}
 
@@ -103,6 +113,46 @@ class YuntingRuntime:
     async def async_call(self, func, *args, **kwargs):
         """把阻塞的云听客户端调用丢进执行器。"""
         return await self.hass.async_add_executor_job(lambda: func(*args, **kwargs))
+
+    # ------------------------------------------------------------ 设备动作
+    async def async_device(self, entry: ConfigEntry):
+        """取（必要时建立）配置项对应的 UPnP 设备连接；地址变了会重发现。"""
+        cached = self._devices.get(entry.entry_id)
+        if cached is not None:
+            return cached
+
+        url = entry.data.get(CONF_URL)
+        try:
+            device = await self.factory.async_create_device(url)
+        except Exception as err:  # noqa: BLE001
+            new_url = await async_find_location_by_udn(self.hass, entry.data.get(CONF_UDN))
+            if not new_url or new_url == url:
+                raise YuntingError(f'连不上设备：{url}') from err
+            device = await self.factory.async_create_device(new_url)
+            LOGGER.info('设备地址已变化：%s → %s', url, new_url)
+            self.hass.config_entries.async_update_entry(
+                entry, data={**entry.data, CONF_URL: new_url})
+
+        self._devices[entry.entry_id] = device
+        return device
+
+    def async_forget_device(self, entry: ConfigEntry) -> None:
+        """丢掉缓存的设备连接，下次调用重新连。"""
+        self._devices.pop(entry.entry_id, None)
+
+    async def async_call_action(self, entry: ConfigEntry, action: str,
+                                service: str = AV_TRANSPORT_SERVICE, **args) -> dict:
+        """在设备上调用一个 UPnP 动作；失败就丢缓存，下次重新连。"""
+        device = await self.async_device(entry)
+        try:
+            upnp_service = device.service(service)
+            upnp_action = upnp_service.action(action)
+            if upnp_action is None:
+                raise YuntingError(f'设备不支持动作 {action}')
+            return await upnp_action.async_call(**args)
+        except Exception:
+            self.async_forget_device(entry)
+            raise
 
     # ---------------------------------------------------------------- 持久化
     async def async_load(self) -> None:
@@ -199,6 +249,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async def _async_clear_recent(call: ServiceCall) -> None:
         await runtime.async_clear_recent()
 
+    async def _async_reboot(call: ServiceCall) -> None:
+        await _async_power(hass, TIMEOUT_REBOOT, '重启')
+
+    async def _async_shutdown(call: ServiceCall) -> None:
+        await _async_power(hass, TIMEOUT_SHUTDOWN, '关机')
+
     hass.services.async_register(
         DOMAIN, SERVICE_PUSH_STATION, _async_push, schema=SERVICE_PUSH_STATION_SCHEMA)
     hass.services.async_register(
@@ -206,8 +262,27 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.services.async_register(
         DOMAIN, SERVICE_REMOVE_FAVORITE, _async_remove_favorite, schema=SERVICE_FAVORITE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_CLEAR_RECENT, _async_clear_recent)
+    hass.services.async_register(DOMAIN, SERVICE_REBOOT, _async_reboot)
+    hass.services.async_register(DOMAIN, SERVICE_SHUTDOWN, _async_shutdown)
 
     return True
+
+
+async def _async_power(hass: HomeAssistant, timeout: int, label: str) -> None:
+    """给所有本集成的设备下发重启/关机（自动化用，不经按钮的二次确认）。"""
+    runtime = get_runtime(hass)
+    entries = hass.config_entries.async_entries(DOMAIN)
+    if not entries:
+        raise HomeAssistantError('还没有添加任何设备')
+    for entry in entries:
+        try:
+            await runtime.async_call_action(
+                entry, 'TimingShutdown', service=AV_TRANSPORT_SERVICE,
+                InstanceID=0, TimeOuts=timeout)
+        except Exception as err:  # noqa: BLE001
+            LOGGER.warning('下发%s失败：%s', label, err)
+            raise HomeAssistantError(f'下发{label}失败：{err}') from err
+        LOGGER.info('已下发%s指令（%s）', label, entry.title)
 
 
 async def async_current_station(hass: HomeAssistant) -> dict | None:

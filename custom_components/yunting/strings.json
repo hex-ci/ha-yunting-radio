@@ -71,6 +71,14 @@
     "clear_recent": {
       "name": "清空最近播放",
       "description": "清空「最近播放」列表。"
+    },
+    "reboot": {
+      "name": "重启音响",
+      "description": "给所有云听电台设备下发重启指令（不经按钮的二次确认，给自动化用）。"
+    },
+    "shutdown": {
+      "name": "关闭音响",
+      "description": "给所有云听电台设备下发关机指令（不经按钮的二次确认，给自动化用）。设备会断电，需要手动开机。"
     }
   },
   "entity": {
@@ -80,6 +88,12 @@
       },
       "unfavorite_current": {
         "name": "取消收藏当前电台"
+      },
+      "reboot": {
+        "name": "重启音响"
+      },
+      "shutdown": {
+        "name": "关闭音响"
       }
     },
     "sensor": {

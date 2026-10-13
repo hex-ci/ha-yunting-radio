@@ -71,6 +71,14 @@
     "clear_recent": {
       "name": "Clear recently played",
       "description": "Clear the recently played list."
+    },
+    "reboot": {
+      "name": "Reboot speaker",
+      "description": "Reboot every Yunting Radio device (no button confirmation; for automations)."
+    },
+    "shutdown": {
+      "name": "Shutdown speaker",
+      "description": "Shut down every Yunting Radio device (no button confirmation; for automations). The speaker loses power and must be turned on manually."
     }
   },
   "entity": {
@@ -80,6 +88,12 @@
       },
       "unfavorite_current": {
         "name": "Unfavorite current station"
+      },
+      "reboot": {
+        "name": "Reboot speaker"
+      },
+      "shutdown": {
+        "name": "Shutdown speaker"
       }
     },
     "sensor": {

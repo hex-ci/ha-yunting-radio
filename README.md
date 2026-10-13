@@ -73,6 +73,10 @@ cp -r /tmp/ha-yunting-radio/custom_components/yunting custom_components/
 | `sensor.<设备>_battery` | 电量（60 秒刷新） |
 | `button.<设备>_favorite_current_station` | 收藏当前电台 |
 | `button.<设备>_unfavorite_current_station` | 取消收藏当前电台 |
+| `button.<设备>_reboot_speaker` | 重启音响（**按两次确认**） |
+| `button.<设备>_shutdown_speaker` | 关闭音响（**按两次确认**，断电后需手动开机） |
+
+> 重启 / 关机走设备私有动作 `TimingShutdown`，取值与官方 App 控制端一致（`0` 关机、`999` 重启）。官方端是「弹确认框 → 下发」，HA 的实体按钮弹不出模态框，所以做成「按两次确认」：第一次按只上膛并弹通知，30 秒内再按一次才真的下发（成功失败都会弹通知）。想换成单击 + 原生确认对话框，给卡片加 `confirmation` 即可。
 
 **服务**
 
@@ -80,6 +84,7 @@ cp -r /tmp/ha-yunting-radio/custom_components/yunting custom_components/
 |---|---|
 | `yunting.push_station` | 按台名或 contentId 推送；不指定实体就推给全部 |
 | `yunting.add_favorite` / `yunting.remove_favorite` | 收藏 / 取消收藏；**不填台名就作用于当前在播的台** |
+| `yunting.reboot` / `yunting.shutdown` | 直接下发重启 / 关机（**不经按钮的二次确认**，给自动化用） |
 | `yunting.clear_recent` | 清空「最近播放」 |
 
 **选项**（设置 → 设备与服务 → 云听电台 → 配置）
