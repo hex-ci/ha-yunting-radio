@@ -110,7 +110,7 @@ class YuntingMediaSource(MediaSource):
     # ------------------------------------------------------------------ 搜索
     async def async_search_media(self, item: MediaSourceItem,
                                  query: SearchMediaQuery) -> SearchMedia:
-        """按关键词搜全国电台（本地索引，941 个）。"""
+        """按关键词搜全国电台。"""
         keyword = (query.search_query or '').strip()
         if not keyword:
             return SearchMedia(result=[])

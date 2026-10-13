@@ -116,7 +116,7 @@ class YuntingClient:
         return self._normalize(data, None)
 
     def all_stations(self, refresh: bool = False) -> list[dict]:
-        """央广 + 31 个省，去重后约 941 个。带磁盘缓存（默认 1 天）。"""
+        """央广 + 31 个省。带磁盘缓存（默认 1 天）。"""
         cache = os.path.join(self.cache_dir, 'stations.json')
         if not refresh and os.path.exists(cache):
             if time.time() - os.path.getmtime(cache) < self.cache_ttl:

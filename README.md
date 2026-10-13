@@ -2,7 +2,7 @@
 
 **在 Home Assistant 的媒体浏览器里搜索、浏览、收藏云听的全国电台，一键推送到局域网音响播放。**
 
-一个 Home Assistant 自定义集成（custom integration），把「央广 + 31 个省共 941 个电台」变成 HA 媒体库里可浏览、可搜索的内容源，并通过 DLNA/UPnP 把直播流推到音响上播放——顺带给出播放状态、音量、当前台名和设备电量。
+一个 Home Assistant 自定义集成（custom integration），把电台变成 HA 媒体库里可浏览、可搜索的内容源，并通过 DLNA/UPnP 把直播流推到音响上播放——顺带给出播放状态、音量、当前台名和设备电量。
 
 > 不需要在 HA 里维护任何外部脚本或服务：装上集成即可用。
 
@@ -15,7 +15,7 @@
 
 | 功能 | 说明 |
 |---|---|
-| **搜索电台** | 媒体浏览器顶部搜索框，关键词（如「交通」「中国之声」）在**全国 941 个电台**里匹配，点结果即推送播放 |
+| **搜索电台** | 媒体浏览器顶部搜索框，关键词（如「交通」「中国之声」）在**全国电台**里匹配，点结果即推送播放 |
 | **浏览电台** | 按「央广频率」（19 个）或「按省份」（31 个省）逐层浏览 |
 | **收藏** | 每个电台条目展开后有「⭐ 收藏这个电台」；也可以一键收藏当前正在播的台；收藏夹在媒体浏览器里直接点播 |
 | **最近播放** | 播过的台自动记录（保留 20 条），不收藏也能找回 |
@@ -50,7 +50,7 @@ cp -r /tmp/ha-yunting-radio/custom_components/yunting custom_components/
 | **添加一台 DLNA 音响** | 想用本集成播放、看状态、看电量、重启/关机 | 集成自己发 SSDP 搜索列出局域网里的渲染器（果壳音响这类设备**不主动广播**，所以不走 HA 自带的发现缓存）；列表里没有你的设备时直接填 `http://<地址>:<端口>/renderer.xml` |
 | **只启用云听电台内容源** | 已经有别的播放器（官方 `dlna_dmr`、Music Assistant…），只想要「云听电台」这个媒体库入口 | **不添加任何设备、不建任何实体**，只把云听电台注册进媒体库；播放时在媒体面板右下角把目标选成你自己的播放器即可（搜索是内容源自己的能力，不依赖播放器） |
 
-只启用内容源时**没有任何设备是正常的**：媒体浏览器里照样能浏览 941 个电台、能搜索、能解析播放地址。
+只启用内容源时**没有任何设备是正常的**：媒体浏览器里照样能浏览电台、能搜索、能解析播放地址。
 
 ## 用法
 
@@ -120,7 +120,7 @@ cp -r /tmp/ha-yunting-radio/custom_components/yunting custom_components/
 | 换了 IP 或端口 | 不用管，集成会自己重发现并回写地址 |
 | 状态是 playing 但没声音 | 选项里的 `ffmpeg://` 前缀被关了，或直播地址里的时效令牌过期（重新点一次即可） |
 | 点台一直转圈 | 侧边栏「媒体」面板的右下角播放目标还是「网页浏览器」，改成音响 |
-| 搜索没结果 | 搜索走本地索引（941 个电台，首次约 2 秒拉取）；网关限流或断网时会为空，稍后重试 |
+| 搜索没结果 | 搜索走本地索引（首次约 2 秒拉取）；网关限流或断网时会为空，稍后重试 |
 | 看不到当前台名 | 音响不回报曲目元数据（把 `TrackMetaData` 回成字面量 `unkown`），台名由集成在推送时记下来 |
 
 ## 已知限制
@@ -152,7 +152,7 @@ docs/                         协议实测结论、云听接口、集成细节
 
 **Yunting Radio — Home Assistant integration for 云听 internet radio.**
 
-Browse, search and favorite 941 Chinese radio stations from 云听 (央广 + 31 provinces) inside the Home Assistant media browser, then push the live stream to any DLNA/UPnP renderer on your LAN. Tested on the GEAK (果壳) smart speaker.
+Browse, search and favorite Chinese radio stations from 云听 inside the Home Assistant media browser, then push the live stream to any DLNA/UPnP renderer on your LAN. Tested on the GEAK (果壳) smart speaker.
 
 - Search box in the media browser (searching a media source goes straight to the source, so no player cooperation is needed — the bundled player exists for the device side: the `ffmpeg://` prefix and the device's private actions).
 - Stations are playable items; each one expands into favorite / unfavorite actions.

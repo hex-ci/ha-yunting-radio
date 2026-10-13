@@ -62,7 +62,7 @@ GET /contentBiz/appBroadcast/allByProvince?provinceCode=110000
 ```
 
 - `provinceCode` 省略时服务端默认返回北京，不是全国列表；`provinceCode=0` 返回 `data:null`。
-- 省级列表**不含央广国家台**。全国电台 = 央广 19 个 + 31 个省各请求一次再合并，去重后约 **941 个**。
+- 省级列表**不含央广国家台**。全国电台 = 央广 19 个 + 31 个省各请求一次再合并。
 - 被忽略的参数（传了也没用）：`categoryId`、`categoryIds`、`tagName`、`contentType`、`pageIndex`、`pageSize`、`regionCode`。
 
 ### 电台详情（唯一给高清地址的接口）
@@ -93,7 +93,7 @@ GET /contentBiz/appBroadcast/detail/<contentId>
 
 App 的搜索路径是 `/search/search/findSearchResourceList`，但**没能试出关键词参数名**：试过 `keyword` / `keyWord` / `searchWord` / `searchKey` / `query` 等 40 多个名字，一律返回 `{"code":0,"data":{"totalNum":0,"data":[]}}`；POST 到该路径返回 503；拿 APK 字符串池穷举会被限流（418）。
 
-所以本工具（与原始客户端一样）**用本地索引搜索**：把央广 + 31 省的 941 个电台拉一遍（6 并发，实测约 1.4 到 2 秒），在内存里按 `title` / `tagName` / `subtitle` 过滤。代价是搜索范围限于这 941 个电台。
+所以本工具（与原始客户端一样）**用本地索引搜索**：把央广 + 31 省的电台拉一遍（6 并发，实测约 1.4 到 2 秒），在内存里按 `title` / `tagName` / `subtitle` 过滤。
 
 ### 节目单
 
@@ -107,4 +107,4 @@ App 版**没有 `downloadUrl` / 播放地址字段**（Web 版才有），所以
 
 ### 未采用
 
-`POST https://ytapi.radio.cn/ytsrv/srv/interactive/broadcastList` 是 H5「直播」tab 的电台列表，但它返回的是本文那套的**严格子集**（实测 170 个全部已包含在 941 个里，0 个独有），且只认 `categoryId`、没有省份维度。唯一多给的东西是 `playUrlMp3` 字段里有真 `.mp3` 直链，可作为兼容后备。
+`POST https://ytapi.radio.cn/ytsrv/srv/interactive/broadcastList` 是 H5「直播」tab 的电台列表，但它返回的是本文那套的**严格子集**，且只认 `categoryId`、没有省份维度。唯一多给的东西是 `playUrlMp3` 字段里有真 `.mp3` 直链，可作为兼容后备。

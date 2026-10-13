@@ -18,7 +18,7 @@
       },
       "source_only": {
         "title": "Media source only",
-        "description": "No device: just registers the Yunting Radio media source (941 stations, browsable and searchable). Pick your own player in the bottom-right of the media panel to play."
+        "description": "No device: just registers the Yunting Radio media source (browsable and searchable). Pick your own player in the bottom-right of the media panel to play."
       }
     },
     "error": {
