@@ -1,7 +1,7 @@
 {
   "domain": "yunting",
   "name": "云听电台",
-  "codeowners": ["@hex-ci"],
+  "codeowners": ["@Hex"],
   "config_flow": true,
   "dependencies": ["http", "media_source", "persistent_notification", "ssdp"],
   "documentation": "https://github.com/hex-ci/home-assistant-radio",
