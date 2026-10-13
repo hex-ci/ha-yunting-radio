@@ -73,8 +73,11 @@ cp -r /tmp/ha-yunting-radio/custom_components/yunting custom_components/
 | `sensor.<设备>_battery` | 电量（60 秒刷新） |
 | `button.<设备>_favorite_current_station` | 收藏当前电台 |
 | `button.<设备>_unfavorite_current_station` | 取消收藏当前电台 |
+| `button.<设备>_rediscover_device` | 重新搜索设备地址（**平时不搜，按一下才搜**） |
 | `button.<设备>_reboot_speaker` | 重启音响（**按两次确认**） |
 | `button.<设备>_shutdown_speaker` | 关闭音响（**按两次确认**，断电后需手动开机） |
+
+> 设备地址策略：**不做后台轮询搜索**。配置项里存着上次发现的地址，轮询只连这个地址（连不上就快速标不可用，不发 SSDP）。只有你按「重新发现设备」按钮、或发起播放时连不上，才会真的搜一次（6–8 秒），搜到就把新地址写回配置项。DLNA 音响常年关机，这样既不刷日志也不浪费。
 
 > 重启 / 关机走设备私有动作 `TimingShutdown`，取值与官方 App 控制端一致（`0` 关机、`999` 重启）。官方端是「弹确认框 → 下发」，HA 的实体按钮弹不出模态框，所以做成「按两次确认」：第一次按只上膛并弹通知，30 秒内再按一次才真的下发（成功失败都会弹通知）。想换成单击 + 原生确认对话框，给卡片加 `confirmation` 即可。
 
@@ -85,6 +88,7 @@ cp -r /tmp/ha-yunting-radio/custom_components/yunting custom_components/
 | `yunting.push_station` | 按台名或 contentId 推送；不指定实体就推给全部 |
 | `yunting.add_favorite` / `yunting.remove_favorite` | 收藏 / 取消收藏；**不填台名就作用于当前在播的台** |
 | `yunting.reboot` / `yunting.shutdown` | 直接下发重启 / 关机（**不经按钮的二次确认**，给自动化用） |
+| `yunting.rediscover` | 按 UDN 重新搜索所有设备的地址并回写配置项，返回每台设备搜到的地址 |
 | `yunting.clear_recent` | 清空「最近播放」 |
 
 **选项**（设置 → 设备与服务 → 云听电台 → 配置）
@@ -102,7 +106,7 @@ cp -r /tmp/ha-yunting-radio/custom_components/yunting custom_components/
 - `ffmpeg://` 前缀是果壳音响的要求，添加其他设备时集成会**自动关掉**它；设备能播 m3u8 就直接放高清线路，播不了就在选项里把线路固定成 `mp3`；
 - 电量传感器用的是果壳音响的私有动作 `GetPowerStatus`，设备不支持时不创建这个实体；
 - 重启/关闭音响用的是私有动作 `TimingShutdown`，设备不支持时不创建这两个按钮。
-- 搜索框是 HA 给**播放器**的能力：本集成自带的播放器声明了 `SEARCH_MEDIA`，所以用本集成添加的设备在媒体浏览器里能搜；如果你不装本集成、只想让别的播放器播，那只能浏览、不能搜（用服务 `yunting.push_station` 指定台名 + 目标实体）。
+- **搜索不挑播放器**：搜索由内容源自己负责（HA 的媒体浏览器在浏览 `media-source://` 节点时把搜索请求直接发给媒体源），所以任何播放器、甚至「网页浏览器」当播放目标时都能搜；播放器的 `SEARCH_MEDIA` 只有「浏览播放器自有树」时才用得上。
 
 ## 常见问题
 
@@ -126,7 +130,7 @@ cp -r /tmp/ha-yunting-radio/custom_components/yunting custom_components/
 ```
 custom_components/yunting/    集成本体（自包含，含云听客户端）
   client.py                   云听接口客户端（纯标准库）
-  media_player.py             媒体播放器实体（声明 SEARCH_MEDIA，所以媒体浏览器有搜索框）
+  media_player.py             媒体播放器实体（通用 DMR 客户端；播放时按设备选项加 ffmpeg:// 前缀）
   media_source.py             媒体源：浏览树 + 搜索 + 解析播放地址
   button.py  sensor.py        收藏按钮、电量传感器
   config_flow.py              添加设备（SSDP 发现或手填）、选项
@@ -146,10 +150,10 @@ docs/                         协议实测结论、云听接口、集成细节
 
 Browse, search and favorite 941 Chinese radio stations from radio.cn (央广 + 31 provinces) inside the Home Assistant media browser, then push the live stream to any DLNA/UPnP renderer on your LAN. Tested on the GEAK (果壳) smart speaker.
 
-- Search box in the media browser (the player declares `SEARCH_MEDIA`, which the built-in `dlna_dmr` does not — that's why this integration ships its own media player).
+- Search box in the media browser (searching a media source goes straight to the source, so no player cooperation is needed — the bundled player exists for the device side: the `ffmpeg://` prefix and the device's private actions).
 - Stations are playable items; each one expands into favorite / unfavorite actions.
-- Entities: media player, battery sensor, favorite buttons. Services: `push_station`, `add_favorite`, `remove_favorite`, `clear_recent`.
-- Self-healing device address (UPnP ports drift; the integration re-discovers by UDN and rewrites the config entry).
+- Entities: media player, battery sensor, favorite buttons, a re-discover button. Services: `push_station`, `add_favorite`, `remove_favorite`, `clear_recent`, `reboot`, `shutdown`, `rediscover`.
+- Self-healing device address (UPnP ports drift): the address is searched **on demand only** — press the re-discover button, call `yunting.rediscover`, or simply hit play (a failed connect triggers one search) — and the new address is written back to the config entry. No background SSDP polling.
 
 Install via HACS as a custom repository (category: integration) or copy `custom_components/yunting` into your config directory and restart.
 

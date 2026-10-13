@@ -12,6 +12,9 @@ STORAGE_KEY = f'{DOMAIN}.data'
 # 配置项
 CONF_URL = 'url'
 CONF_UDN = 'udn'
+# 设备描述里读到的厂商与型号，只用来在 HA 设备页显示（不再写死果壳）
+CONF_MANUFACTURER = 'manufacturer'
+CONF_MODEL = 'model'
 # 选项：是否给直播流地址加前缀（果壳音响必须加）、音质与线路偏好
 CONF_STREAM_PREFIX = 'stream_prefix'
 CONF_QUALITY = 'quality'
@@ -41,6 +44,7 @@ SERVICE_REMOVE_FAVORITE = 'remove_favorite'
 SERVICE_CLEAR_RECENT = 'clear_recent'
 SERVICE_REBOOT = 'reboot'
 SERVICE_SHUTDOWN = 'shutdown'
+SERVICE_REDISCOVER = 'rediscover'
 
 ATTR_STATION = 'station'
 ATTR_ENTITY_ID = 'entity_id'

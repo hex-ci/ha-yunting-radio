@@ -56,7 +56,12 @@ class YuntingConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured(updates={CONF_URL: url})
                 return self.async_create_entry(
                     title=info['name'],
-                    data={CONF_URL: url, CONF_UDN: info['udn']},
+                    data={
+                        CONF_URL: url,
+                        CONF_UDN: info['udn'],
+                        CONF_MANUFACTURER: info.get('manufacturer'),
+                        CONF_MODEL: info.get('model'),
+                    },
                     # 前缀是设备特性：果壳音响要求直播流带 ffmpeg://，其他 DLNA 设备默认不带
                     options={
                         CONF_STREAM_PREFIX: str(info['udn']).startswith(GEAK_UDN_PREFIX),
@@ -118,7 +123,7 @@ class YuntingConfigFlow(ConfigFlow, domain=DOMAIN):
         return result
 
     async def _async_probe(self, url: str) -> dict | None:
-        """取设备描述，确认能连上并拿到 UDN 与名字。"""
+        """取设备描述，确认能连上并拿到 UDN、名字、厂商与型号。"""
         runtime = get_runtime(self.hass)
         try:
             device = await runtime.factory.async_create_device(url)
@@ -127,6 +132,8 @@ class YuntingConfigFlow(ConfigFlow, domain=DOMAIN):
         return {
             'udn': device.udn,
             'name': getattr(device, 'friendly_name', None) or device.udn,
+            'manufacturer': getattr(device, 'manufacturer', None),
+            'model': getattr(device, 'model_name', None),
         }
 
     @staticmethod

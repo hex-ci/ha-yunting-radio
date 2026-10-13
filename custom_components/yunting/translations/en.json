@@ -79,6 +79,10 @@
     "shutdown": {
       "name": "Shutdown speaker",
       "description": "Shut down every Yunting Radio device (no button confirmation; for automations). The speaker loses power and must be turned on manually."
+    },
+    "rediscover": {
+      "name": "Re-discover devices",
+      "description": "Re-discover every device address on the LAN via UDN and store it back (use after the device changed IP/port). Returns the found address per device, null when not found."
     }
   },
   "entity": {
@@ -94,6 +98,9 @@
       },
       "shutdown": {
         "name": "Shutdown speaker"
+      },
+      "rediscover": {
+        "name": "Rediscover device"
       }
     },
     "sensor": {

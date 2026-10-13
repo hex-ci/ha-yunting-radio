@@ -1,4 +1,4 @@
-"""按钮实体：收藏 / 取消收藏当前电台、重启设备、关闭设备。
+"""按钮实体：收藏 / 取消收藏当前电台、重新发现设备、重启设备、关闭设备。
 
 HA 的媒体浏览器是只读浏览，不支持「对某个条目执行动作」，所以这类动作都做成按钮，
 放进仪表盘点一下就行。当前电台的判定见 `__init__.async_current_station`。
@@ -17,6 +17,7 @@ from . import async_current_station, get_runtime
 from .const import (
     AV_TRANSPORT_SERVICE,
     CONF_UDN,
+    CONF_URL,
     DOMAIN,
     LOGGER,
     TIMEOUT_REBOOT,
@@ -36,6 +37,7 @@ async def async_setup_entry(
     entities: list[ButtonEntity] = [
         YuntingFavoriteButton(hass, entry, udn, add=True),
         YuntingFavoriteButton(hass, entry, udn, add=False),
+        YuntingRediscoverButton(hass, entry, udn),
     ]
     if await _async_supports_power(hass, entry):
         entities += [
@@ -50,11 +52,13 @@ async def async_setup_entry(
 async def _async_supports_power(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """设备是否支持私有的 TimingShutdown（果壳音响有，标准 DLNA 设备没有）。
 
+    直接连配置项里存的地址，**不做 SSDP 重发现**：探测只是为了让实体清单正确，
+    不值得为它等一次 6–8 秒的搜索（设备离线时会拖慢平台装载）。
     连不上时按「支持」处理：不要因为设备临时离线就把功能藏起来。
     """
     runtime = get_runtime(hass)
     try:
-        device = await runtime.async_device(entry)
+        device = await runtime.factory.async_create_device(entry.data[CONF_URL])
         service = device.service(AV_TRANSPORT_SERVICE)
         return service.action('TimingShutdown') is not None
     except Exception as err:  # noqa: BLE001
@@ -173,3 +177,33 @@ class YuntingPowerButton(YuntingButton):
                    if self._reboot else '已发送关机指令：设备会断电，需要手动开机')
         LOGGER.info('%s', message)
         self._notify(message)
+
+
+class YuntingRediscoverButton(YuntingButton):
+    """重新搜索设备地址（按一下才搜，平时不搜）。
+
+    SSDP 搜索要 6–8 秒，而这台音响（以及大多数 DLNA 音响）常年关机，所以集成**不做**
+    后台轮询搜索：配置项里存着上次发现的地址，直接用；只有你按这个按钮、或者发起播放
+    时连不上，才会真的去搜一次。搜索到了就把新地址回写到配置项。
+    """
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, udn: str) -> None:
+        super().__init__(hass, entry, udn, 'rediscover')
+
+    async def async_press(self) -> None:
+        """搜一次并回写地址。"""
+        runtime = get_runtime(self.hass)
+        old_url = str(self.entry.data.get(CONF_URL) or '')
+        new_url = await runtime.async_rediscover(self.entry, force=True)
+        if not new_url:
+            LOGGER.info('重新发现：没搜到「%s」（设备可能没开机）', self.entry.title)
+            self._notify(f'没搜到「{self.entry.title}」：设备可能没开机，或者不在同一个网段。')
+            return
+        if new_url == old_url:
+            LOGGER.info('重新发现：地址没变（%s）', new_url)
+            self._notify(f'「{self.entry.title}」地址没变：{new_url}')
+            return
+        self.hass.config_entries.async_update_entry(
+            self.entry, data={**self.entry.data, CONF_URL: new_url})
+        LOGGER.info('重新发现：地址已更新 %s → %s', old_url, new_url)
+        self._notify(f'「{self.entry.title}」地址已更新：{old_url} → {new_url}')

@@ -79,6 +79,10 @@
     "shutdown": {
       "name": "关闭音响",
       "description": "给所有云听电台设备下发关机指令（不经按钮的二次确认，给自动化用）。设备会断电，需要手动开机。"
+    },
+    "rediscover": {
+      "name": "重新发现设备",
+      "description": "按 UDN 在局域网里重新搜索所有设备的地址，搜到就回写配置项（设备换 IP/端口后用）。返回每台设备搜到的地址，没搜到为 null。"
     }
   },
   "entity": {
@@ -94,6 +98,9 @@
       },
       "shutdown": {
         "name": "关闭音响"
+      },
+      "rediscover": {
+        "name": "Rediscover device"
       }
     },
     "sensor": {

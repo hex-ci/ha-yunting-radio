@@ -71,24 +71,17 @@ class YuntingBatterySensor(SensorEntity):
             return False
         return True
 
-    async def _async_rediscover(self) -> bool:
-        """连不上就按 UDN 重新发现，并把新地址回写配置项（带冷却，避免离线时反复搜）。"""
-        url = self.entry.data.get(CONF_URL)
-        new_url = await get_runtime(self.hass).async_rediscover(self.entry)
-        if not new_url or new_url == url or not await self._async_connect(new_url):
-            return False
-        LOGGER.info('电量传感器：设备地址已变化：%s → %s', url, new_url)
-        self.hass.config_entries.async_update_entry(
-            self.entry, data={**self.entry.data, CONF_URL: new_url})
-        return True
-
     # ---------------------------------------------------------------- 轮询
     async def async_update(self) -> None:
-        """读电量；第一次连上时判断设备是否支持这个动作。"""
+        """读电量；第一次连上时判断设备是否支持这个动作。
+
+        连不上就直接标不可用，**不发 SSDP 搜索**：设备常年关机，搜索要 6–8 秒且每轮
+        都搜会把日志刷满。地址由「重新发现设备」按钮 / 播放时的按需重发现更新到配置项，
+        下一轮自然会用新地址连。
+        """
         if self._device is None and not await self._async_connect(self.entry.data[CONF_URL]):
-            if not await self._async_rediscover():
-                self._attr_available = False
-                return
+            self._attr_available = False
+            return
         assert self._device is not None
         try:
             service = self._device.service(AV_TRANSPORT)

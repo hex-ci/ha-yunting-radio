@@ -63,7 +63,7 @@ Stop → SetAVTransportURI(CurrentURI, CurrentURIMetaData) → Play(Speed=1)
   ```
 
   `media_content_id` 非 http 协议时 HA 的 `async_process_play_media_url` 原样透传，`ffmpeg://` 不会被改写；`media_content_type: music` 让 HA 生成的 DIDL 用 `object.item.audioItem.musicTrack`，实测被设备接受。
-- HA 的媒体浏览器搜索框依赖播放器声明 `SEARCH_MEDIA`，而 `dlna_dmr` 只声明 `PLAY_MEDIA` 与 `BROWSE_MEDIA`，所以「在播放器里搜索」这条路不成立。[实测源码]
+- HA 媒体浏览器的搜索在浏览 `media-source://…` 节点时直接发给**内容源**（`media_source/search_media`，实测可用、不需要播放器实体）；只有浏览播放器自有树（integration 专用 id）时才落到 `media_player/search_media`，那条才要求播放器声明 `SEARCH_MEDIA`（`dlna_dmr` 没有）。[实测源码 + 实测 WS 调用]
 - 设备不回报元数据 → HA 面板能看到 播放/暂停/音量，看不到台名；台名要在推送方自己记。
 
 ## 三、云听（radio.cn）接口

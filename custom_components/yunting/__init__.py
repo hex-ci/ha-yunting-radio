@@ -17,7 +17,7 @@ from async_upnp_client.client_factory import UpnpFactory
 from homeassistant.components import media_source as hass_media_source
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import aiohttp_client, config_validation as cv
 from homeassistant.helpers.storage import Store
@@ -45,6 +45,7 @@ from .const import (
     SERVICE_CLEAR_RECENT,
     SERVICE_PUSH_STATION,
     SERVICE_REBOOT,
+    SERVICE_REDISCOVER,
     SERVICE_REMOVE_FAVORITE,
     SERVICE_SHUTDOWN,
     STORAGE_KEY,
@@ -139,19 +140,19 @@ class YuntingRuntime:
         self._devices[entry.entry_id] = device
         return device
 
-    async def async_rediscover(self, entry: ConfigEntry) -> str | None:
-        """按 UDN 重新发现设备地址，带冷却。
+    async def async_rediscover(self, entry: ConfigEntry, force: bool = False) -> str | None:
+        """按 UDN 重新发现设备地址，默认带冷却。
 
-        同一台设备 `REDISCOVERY_COOLDOWN` 秒内只搜一次：设备关机时如果每个轮询
-        周期都发 SSDP 搜索（每次 6–8 秒），日志会被「更新超时」刷满。冷却期内
-        返回 None（当作「没找到」），设备真回来了最多等一个冷却周期就能自愈。
+        后台轮询**不再调用**这里（设备常年关机，SSDP 搜索每次 6–8 秒纯属浪费）：
+        只有用户主动操作才搜——推送播放、点「重新发现设备」按钮、调 `yunting.rediscover`。
+        `force=True`（手动按钮/服务）时忽略冷却，用户点一次就真搜一次。
         """
         udn = entry.data.get(CONF_UDN)
         if not udn:
             return None
         now = time.monotonic()
         last = self._rediscovered_at.get(udn)
-        if last is not None and now - last < REDISCOVERY_COOLDOWN:
+        if not force and last is not None and now - last < REDISCOVERY_COOLDOWN:
             LOGGER.debug('距上次重发现不足 %s 秒，跳过', REDISCOVERY_COOLDOWN)
             return None
         self._rediscovered_at[udn] = now
@@ -276,6 +277,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async def _async_shutdown(call: ServiceCall) -> None:
         await _async_power(hass, TIMEOUT_SHUTDOWN, '关机')
 
+    async def _async_rediscover(call: ServiceCall) -> dict[str, Any]:
+        return await _async_rediscover_all(hass)
+
     hass.services.async_register(
         DOMAIN, SERVICE_PUSH_STATION, _async_push, schema=SERVICE_PUSH_STATION_SCHEMA)
     hass.services.async_register(
@@ -285,8 +289,36 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_CLEAR_RECENT, _async_clear_recent)
     hass.services.async_register(DOMAIN, SERVICE_REBOOT, _async_reboot)
     hass.services.async_register(DOMAIN, SERVICE_SHUTDOWN, _async_shutdown)
+    hass.services.async_register(
+        DOMAIN, SERVICE_REDISCOVER, _async_rediscover,
+        supports_response=SupportsResponse.OPTIONAL)
 
     return True
+
+
+async def _async_rediscover_all(hass: HomeAssistant) -> dict[str, Any]:
+    """主动重发现所有设备的地址（按钮/服务走的就是这里），搜到的地址回写配置项。"""
+    runtime = get_runtime(hass)
+    entries = hass.config_entries.async_entries(DOMAIN)
+    if not entries:
+        raise HomeAssistantError('还没有添加任何设备')
+
+    found: dict[str, Any] = {}
+    for entry in entries:
+        old_url = entry.data.get(CONF_URL)
+        new_url = await runtime.async_rediscover(entry, force=True)
+        if not new_url:
+            LOGGER.info('重新发现：没搜到「%s」', entry.title)
+            found[entry.title] = None
+            continue
+        if new_url != old_url:
+            hass.config_entries.async_update_entry(
+                entry, data={**entry.data, CONF_URL: new_url})
+            LOGGER.info('重新发现：%s 地址已更新 %s → %s', entry.title, old_url, new_url)
+        else:
+            LOGGER.info('重新发现：%s 地址没变（%s）', entry.title, new_url)
+        found[entry.title] = new_url
+    return {'devices': found}
 
 
 async def _async_power(hass: HomeAssistant, timeout: int, label: str) -> None:

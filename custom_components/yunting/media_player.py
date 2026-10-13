@@ -38,6 +38,8 @@ from . import get_runtime
 from .const import (
     ACTION_FAVORITE,
     ACTION_UNFAVORITE,
+    CONF_MANUFACTURER,
+    CONF_MODEL,
     CONF_UDN,
     CONF_URL,
     DOMAIN,
@@ -92,7 +94,6 @@ class YuntingRenderer(MediaPlayerEntity):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass = hass
         self.entry = entry
-        self._url: str = entry.data[CONF_URL]
         self._udn: str = entry.data[CONF_UDN]
         self._dmr: DmrDevice | None = None
         self._connect_lock = asyncio.Lock()
@@ -104,8 +105,14 @@ class YuntingRenderer(MediaPlayerEntity):
             identifiers={(DOMAIN, self._udn)},
             connections={(dr.CONNECTION_UPNP, self._udn)},
             name=entry.title,
-            manufacturer='GEAK',
+            manufacturer=entry.data.get(CONF_MANUFACTURER) or None,
+            model=entry.data.get(CONF_MODEL) or None,
         )
+
+    @property
+    def _url(self) -> str:
+        """当前设备地址：以配置项为准（手动重发现/播放时按需重发现都会写回配置项）。"""
+        return str(self.entry.data.get(CONF_URL) or '')
 
     # ------------------------------------------------------------ 生命周期
     async def async_added_to_hass(self) -> None:
@@ -123,19 +130,28 @@ class YuntingRenderer(MediaPlayerEntity):
         if self.entity_id in runtime.entity_ids:
             runtime.entity_ids.remove(self.entity_id)
 
-    async def _async_connect(self) -> bool:
-        """（重新）建立与设备的连接；地址变了就自己找回来。"""
+    async def _async_connect(self, rediscover: bool = False) -> bool:
+        """（重新）建立与设备的连接。
+
+        默认**只试配置项里存下来的地址**：这台设备（以及大多数 DLNA 音响）常年关机，
+        后台轮询里去发 SSDP 搜索每次要 6–8 秒，纯属浪费，还会把日志刷满。只有用户
+        主动操作（推送播放、点「重新发现设备」、调用 yunting.rediscover）才传
+        `rediscover=True`，那次才允许按 UDN 重新搜索地址。
+        """
         runtime = get_runtime(self.hass)
         async with self._connect_lock:
             if await self._async_try_connect(self._url):
                 return True
 
+            if not rediscover:
+                self._attr_available = False
+                return False
+
             # 连不上：设备可能重启过 UPnP 服务，端口会漂（实测 49152 / 49153 / 49154 都出现过）
             new_url = await runtime.async_rediscover(self.entry)
             if new_url and new_url != self._url and await self._async_try_connect(new_url):
                 LOGGER.info('设备地址已变化：%s → %s', self._url, new_url)
-                self._url = new_url
-                # 回写配置项，重启 HA 之后也不用再找一遍
+                # 回写配置项：这就是地址的唯一真相，重启 HA、别的平台都读它
                 self.hass.config_entries.async_update_entry(
                     self.entry, data={**self.entry.data, CONF_URL: new_url})
                 return True
@@ -338,7 +354,7 @@ class YuntingRenderer(MediaPlayerEntity):
             media_id = f'{runtime.stream_prefix}{media_id}'
         LOGGER.debug('准备推送的地址：%s', media_id)
 
-        if self._dmr is None and not await self._async_connect():
+        if self._dmr is None and not await self._async_connect(rediscover=True):
             raise HomeAssistantError('设备不可用，无法推送')
 
         didl_metadata = didl_lite.to_xml_string(
