@@ -4,10 +4,10 @@
   "codeowners": ["@hex-ci"],
   "config_flow": true,
   "dependencies": ["http", "media_source", "persistent_notification", "ssdp"],
-  "documentation": "https://github.com/hex-ci/ha-yunting-radio",
+  "documentation": "https://github.com/hex-ci/home-assistant-radio",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/hex-ci/ha-yunting-radio/issues",
+  "issue_tracker": "https://github.com/hex-ci/home-assistant-radio/issues",
   "loggers": ["async_upnp_client"],
   "version": "0.1.0"
 }

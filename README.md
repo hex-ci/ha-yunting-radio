@@ -7,7 +7,7 @@
 > 不需要在 HA 里维护任何外部脚本或服务：装上集成即可用。
 
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5?logo=homeassistant&logoColor=white)
-![License](https://img.shields.io/github/license/hex-ci/ha-yunting-radio)
+![License](https://img.shields.io/github/license/hex-ci/home-assistant-radio)
 
 关键词：Home Assistant 集成 · 云听 · 中央广播电视总台 · 网络收音机 · 电台 · 媒体源 media_source · 媒体播放器 media_player · DLNA · UPnP · 果壳智能音响 · GEAK · 智能家居
 
@@ -29,15 +29,15 @@
 ### HACS（推荐）
 
 1. HACS → 集成 → 右上角菜单 → **自定义仓库**
-2. 填 `https://github.com/hex-ci/ha-yunting-radio`，类别选 **集成**
+2. 填 `https://github.com/hex-ci/home-assistant-radio`，类别选 **集成**
 3. 搜索「云听电台」安装，然后**重启 Home Assistant**
 
 ### 手动
 
 ```bash
 cd /path/to/homeassistant/config
-git clone https://github.com/hex-ci/ha-yunting-radio.git /tmp/ha-yunting-radio
-cp -r /tmp/ha-yunting-radio/custom_components/yunting custom_components/
+git clone https://github.com/hex-ci/home-assistant-radio.git /tmp/home-assistant-radio
+cp -r /tmp/home-assistant-radio/custom_components/yunting custom_components/
 # 重启 Home Assistant
 ```
 
