@@ -31,14 +31,35 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """为每台设备加按钮。"""
+    """为每台设备加按钮；重启/关机只在这台设备支持时才建。"""
     udn = entry.data[CONF_UDN]
-    async_add_entities([
+    entities: list[ButtonEntity] = [
         YuntingFavoriteButton(hass, entry, udn, add=True),
         YuntingFavoriteButton(hass, entry, udn, add=False),
-        YuntingPowerButton(hass, entry, udn, reboot=True),
-        YuntingPowerButton(hass, entry, udn, reboot=False),
-    ])
+    ]
+    if await _async_supports_power(hass, entry):
+        entities += [
+            YuntingPowerButton(hass, entry, udn, reboot=True),
+            YuntingPowerButton(hass, entry, udn, reboot=False),
+        ]
+    else:
+        LOGGER.debug('设备不支持 TimingShutdown，不创建重启/关机按钮')
+    async_add_entities(entities)
+
+
+async def _async_supports_power(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """设备是否支持私有的 TimingShutdown（果壳音响有，标准 DLNA 设备没有）。
+
+    连不上时按「支持」处理：不要因为设备临时离线就把功能藏起来。
+    """
+    runtime = get_runtime(hass)
+    try:
+        device = await runtime.async_device(entry)
+        service = device.service(AV_TRANSPORT_SERVICE)
+        return service.action('TimingShutdown') is not None
+    except Exception as err:  # noqa: BLE001
+        LOGGER.debug('探测 TimingShutdown 失败（按支持处理）：%s', err)
+        return True
 
 
 class YuntingButton(ButtonEntity):

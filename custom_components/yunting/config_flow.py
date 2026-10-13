@@ -57,6 +57,10 @@ class YuntingConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=info['name'],
                     data={CONF_URL: url, CONF_UDN: info['udn']},
+                    # 前缀是设备特性：果壳音响要求直播流带 ffmpeg://，其他 DLNA 设备默认不带
+                    options={
+                        CONF_STREAM_PREFIX: str(info['udn']).startswith(GEAK_UDN_PREFIX),
+                    },
                 )
 
         if devices:

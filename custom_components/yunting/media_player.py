@@ -46,7 +46,6 @@ from .const import (
     NODE_ROOT,
     SCAN_INTERVAL_SECONDS,
 )
-from .discovery import async_find_location_by_udn
 
 SCAN_INTERVAL = timedelta(seconds=SCAN_INTERVAL_SECONDS)
 
@@ -115,7 +114,9 @@ class YuntingRenderer(MediaPlayerEntity):
         if self.entity_id not in runtime.entity_ids:
             runtime.entity_ids.append(self.entity_id)
         self.async_on_remove(self._async_forget_entity)
-        await self._async_connect()
+        # 连接丢后台：设备离线时同步连要等连接超时 + 重发现（10 秒以上），会拖慢 HA 启动。
+        # 第一个轮询周期也会连，所以这里不阻塞不影响功能，只是设备在线时能更快变可用。
+        self.hass.async_create_task(self._async_connect())
 
     def _async_forget_entity(self) -> None:
         runtime = get_runtime(self.hass)
@@ -124,12 +125,13 @@ class YuntingRenderer(MediaPlayerEntity):
 
     async def _async_connect(self) -> bool:
         """（重新）建立与设备的连接；地址变了就自己找回来。"""
+        runtime = get_runtime(self.hass)
         async with self._connect_lock:
             if await self._async_try_connect(self._url):
                 return True
 
             # 连不上：设备可能重启过 UPnP 服务，端口会漂（实测 49152 / 49153 / 49154 都出现过）
-            new_url = await async_find_location_by_udn(self.hass, self._udn)
+            new_url = await runtime.async_rediscover(self.entry)
             if new_url and new_url != self._url and await self._async_try_connect(new_url):
                 LOGGER.info('设备地址已变化：%s → %s', self._url, new_url)
                 self._url = new_url
@@ -334,6 +336,7 @@ class YuntingRenderer(MediaPlayerEntity):
         # 果壳音响这类设备要求直播流地址带前缀，裸 http 会被接受但不出声
         if runtime.stream_prefix and media_id.startswith(('http://', 'https://')):
             media_id = f'{runtime.stream_prefix}{media_id}'
+        LOGGER.debug('准备推送的地址：%s', media_id)
 
         if self._dmr is None and not await self._async_connect():
             raise HomeAssistantError('设备不可用，无法推送')

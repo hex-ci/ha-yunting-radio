@@ -29,6 +29,7 @@ from .const import (
     ATTR_ENTITY_ID,
     ATTR_STATION,
     AV_TRANSPORT_SERVICE,
+    REDISCOVERY_COOLDOWN,
     CONF_LINE,
     CONF_QUALITY,
     CONF_STREAM_PREFIX,
@@ -87,6 +88,8 @@ class YuntingRuntime:
         self.recent: list[dict[str, Any]] = []
         # 刚从媒体浏览器解析出来的电台，用来在实体上显示台名（设备不回报元数据）
         self.last_resolved: dict[str, Any] | None = None
+        # 每台设备上次「按 UDN 重发现」的时间，用来给重发现降温
+        self._rediscovered_at: dict[str, float] = {}
         # 已装载的媒体播放器实体 id
         self.entity_ids: list[str] = []
         # 推流偏好（由媒体播放器实体从配置项选项里带进来）
@@ -125,7 +128,7 @@ class YuntingRuntime:
         try:
             device = await self.factory.async_create_device(url)
         except Exception as err:  # noqa: BLE001
-            new_url = await async_find_location_by_udn(self.hass, entry.data.get(CONF_UDN))
+            new_url = await self.async_rediscover(entry)
             if not new_url or new_url == url:
                 raise YuntingError(f'连不上设备：{url}') from err
             device = await self.factory.async_create_device(new_url)
@@ -135,6 +138,24 @@ class YuntingRuntime:
 
         self._devices[entry.entry_id] = device
         return device
+
+    async def async_rediscover(self, entry: ConfigEntry) -> str | None:
+        """按 UDN 重新发现设备地址，带冷却。
+
+        同一台设备 `REDISCOVERY_COOLDOWN` 秒内只搜一次：设备关机时如果每个轮询
+        周期都发 SSDP 搜索（每次 6–8 秒），日志会被「更新超时」刷满。冷却期内
+        返回 None（当作「没找到」），设备真回来了最多等一个冷却周期就能自愈。
+        """
+        udn = entry.data.get(CONF_UDN)
+        if not udn:
+            return None
+        now = time.monotonic()
+        last = self._rediscovered_at.get(udn)
+        if last is not None and now - last < REDISCOVERY_COOLDOWN:
+            LOGGER.debug('距上次重发现不足 %s 秒，跳过', REDISCOVERY_COOLDOWN)
+            return None
+        self._rediscovered_at[udn] = now
+        return await async_find_location_by_udn(self.hass, udn)
 
     def async_forget_device(self, entry: ConfigEntry) -> None:
         """丢掉缓存的设备连接，下次调用重新连。"""

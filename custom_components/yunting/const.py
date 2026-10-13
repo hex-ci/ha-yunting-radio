@@ -21,6 +21,10 @@ DEFAULT_STREAM_PREFIX = 'ffmpeg://'
 DEFAULT_QUALITY = 'high'
 DEFAULT_LINE = 'auto'
 
+# 连不上设备时按 UDN 重新发现的最小间隔（秒）。设备关机时每个轮询周期都搜一次
+# 会让日志被「更新超时」刷满，而 SSDP 搜索本身要 6–8 秒（设备应答率约 40%，靠窗口内重发）。
+REDISCOVERY_COOLDOWN = 60
+
 QUALITY_CHOICES = ['high', 'low']
 LINE_CHOICES = ['auto', 'm3u8', 'mp3']
 

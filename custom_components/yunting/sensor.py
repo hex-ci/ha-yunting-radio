@@ -20,7 +20,6 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import get_runtime
 from .const import CONF_UDN, CONF_URL, DOMAIN, LOGGER
-from .discovery import async_find_location_by_udn
 
 SCAN_INTERVAL = timedelta(seconds=60)
 PARALLEL_UPDATES = 1
@@ -33,13 +32,12 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """先探一次，确认设备支持 GetPowerStatus 再建实体。"""
-    sensor = YuntingBatterySensor(hass, entry)
-    await sensor.async_probe()
-    if sensor.supported is False:
-        LOGGER.debug('设备不支持 GetPowerStatus，不创建电量实体')
-        return
-    async_add_entities([sensor])
+    """建电量实体；设备是否支持 GetPowerStatus 在第一次轮询时判断。
+
+    不在启动时探测：设备离线时探测要等连接超时 + 重发现（10 秒以上），会拖慢平台
+    装载，而且离线时反而会把实体藏起来。设备不支持时实体在第一次轮询后自己移除。
+    """
+    async_add_entities([YuntingBatterySensor(hass, entry)])
 
 
 class YuntingBatterySensor(SensorEntity):
@@ -74,9 +72,9 @@ class YuntingBatterySensor(SensorEntity):
         return True
 
     async def _async_rediscover(self) -> bool:
-        """连不上就按 UDN 重新发现，并把新地址回写配置项。"""
+        """连不上就按 UDN 重新发现，并把新地址回写配置项（带冷却，避免离线时反复搜）。"""
         url = self.entry.data.get(CONF_URL)
-        new_url = await async_find_location_by_udn(self.hass, self._udn)
+        new_url = await get_runtime(self.hass).async_rediscover(self.entry)
         if not new_url or new_url == url or not await self._async_connect(new_url):
             return False
         LOGGER.info('电量传感器：设备地址已变化：%s → %s', url, new_url)
@@ -85,20 +83,8 @@ class YuntingBatterySensor(SensorEntity):
         return True
 
     # ---------------------------------------------------------------- 轮询
-    async def async_probe(self) -> None:
-        """建实体前探一次：能不能连、有没有 GetPowerStatus。"""
-        if not await self._async_connect(self.entry.data[CONF_URL]):
-            await self._async_rediscover()
-        if self._device is None:
-            return
-        try:
-            service = self._device.service(AV_TRANSPORT)
-            self.supported = service.action('GetPowerStatus') is not None
-        except Exception:  # noqa: BLE001
-            self.supported = False
-
     async def async_update(self) -> None:
-        """读电量。"""
+        """读电量；第一次连上时判断设备是否支持这个动作。"""
         if self._device is None and not await self._async_connect(self.entry.data[CONF_URL]):
             if not await self._async_rediscover():
                 self._attr_available = False
@@ -108,8 +94,10 @@ class YuntingBatterySensor(SensorEntity):
             service = self._device.service(AV_TRANSPORT)
             action = service.action('GetPowerStatus')
             if action is None:
+                # 设备没有这个私有动作（非果壳设备）：实体自己消失，别留个永远空的实体
+                LOGGER.debug('设备不支持 GetPowerStatus，电量实体自行移除')
                 self.supported = False
-                self._attr_available = False
+                await self.async_remove()
                 return
             result = await action.async_call(InstanceID=0)
         except Exception as err:  # noqa: BLE001

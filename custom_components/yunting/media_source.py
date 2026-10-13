@@ -144,7 +144,9 @@ class YuntingMediaSource(MediaSource):
             raise Unresolvable(f'取「{station["title"]}」的播放地址失败：{err}') from err
 
         await runtime.async_remember(station)
-        return PlayMedia(url=f'{runtime.stream_prefix}{url}', mime_type='audio/mpeg')
+        # 只给「裸」地址：`ffmpeg://` 之类的前缀是**播放设备**的特性，由播放端加
+        # （我们的播放器实体会加），内容源不该替别的设备做决定。
+        return PlayMedia(url=url, mime_type='audio/mpeg')
 
     # ------------------------------------------------------------------ 工具
     async def _async_station(self, content_id: str) -> dict:
