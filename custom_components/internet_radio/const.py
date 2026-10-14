@@ -50,6 +50,16 @@ SERVICE_REBOOT = 'reboot'
 SERVICE_SHUTDOWN = 'shutdown'
 SERVICE_REDISCOVER = 'rediscover'
 
+# UPnP 状态变量类型分组，用来在调用动作前把值转成库能接受的类型（见 coerce_action_args）
+STRING_STATE_TYPES = frozenset({
+    'string', 'char', 'date', 'dateTime', 'dateTime.tz', 'time', 'time.tz',
+    'uri', 'uuid', 'bin.base64', 'bin.hex',
+})
+FLOAT_STATE_TYPES = frozenset({'r4', 'r8', 'number', 'float', 'fixed.14.4'})
+NUMBER_STATE_TYPES = frozenset({
+    'ui1', 'ui2', 'ui4', 'ui8', 'i1', 'i2', 'i4', 'i8', 'int',
+}) | FLOAT_STATE_TYPES
+
 ATTR_STATION = 'station'
 ATTR_ENTITY_ID = 'entity_id'
 

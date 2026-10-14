@@ -41,6 +41,7 @@ from .const import (
     DEFAULT_STREAM_PREFIX,
     DOMAIN,
     LOGGER,
+    NUMBER_STATE_TYPES,
     RECENT_LIMIT,
     SERVICE_ADD_FAVORITE,
     SERVICE_CLEAR_RECENT,
@@ -51,6 +52,7 @@ from .const import (
     SERVICE_SHUTDOWN,
     STORAGE_KEY,
     STORAGE_VERSION,
+    STRING_STATE_TYPES,
     TIMEOUT_REBOOT,
     TIMEOUT_SHUTDOWN,
 )
@@ -172,7 +174,7 @@ class YuntingRuntime:
             upnp_action = upnp_service.action(action)
             if upnp_action is None:
                 raise YuntingError(f'设备不支持动作 {action}')
-            return await upnp_action.async_call(**args)
+            return await upnp_action.async_call(**coerce_action_args(upnp_action, args))
         except Exception:
             self.async_forget_device(entry)
             raise
@@ -404,6 +406,29 @@ async def async_push_station(hass: HomeAssistant, station: dict,
             },
             blocking=True,
         )
+
+
+def coerce_action_args(action, args: dict[str, Any]) -> dict[str, Any]:
+    """按设备 SCPD 声明的类型转换入参。
+
+    async_upnp_client 会拿「参数关联的状态变量」的类型做校验，而厂商的 SCPD 经常写错：
+    果壳音响的 `TimingShutdown(TimeOuts=...)` 把 `TimeOuts` 关联到了 `TimeZone`（string），
+    于是传整数 `0` / `999` 会被库判成 `Invalid value for TimeZone: '0'`，**指令根本发不出去**。
+    这里按声明类型转一下（string 类转 str、数字类转 int/float），调用点就不必各自记这个坑。
+    """
+    out: dict[str, Any] = {}
+    types = {a.name: a.related_state_variable.data_type for a in action.arguments}
+    for name, value in args.items():
+        data_type = (types.get(name) or '').strip()
+        try:
+            if data_type in STRING_STATE_TYPES and not isinstance(value, str):
+                value = str(value)
+            elif data_type in NUMBER_STATE_TYPES and isinstance(value, str):
+                value = float(value) if data_type in FLOAT_STATE_TYPES else int(value)
+        except (TypeError, ValueError):
+            pass  # 转不了就原样交给库去报错，别把错误吞掉
+        out[name] = value
+    return out
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
